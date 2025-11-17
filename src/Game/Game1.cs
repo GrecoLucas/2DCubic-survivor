@@ -24,16 +24,13 @@ namespace CubeSurvivor
         private GameStateSystem _gameStateSystem;
         private PlayerInputSystem _inputSystem;
 
-        // Configurações da tela
-        private const int ScreenWidth = 1280;
-        private const int ScreenHeight = 720;
+        // Factories
+        private readonly IPlayerFactory _playerFactory;
+        private readonly IEnemyFactory _enemyFactory;
+        private readonly IBulletFactory _bulletFactory;
 
-        // Limites do mapa (mapa finito). Ajuste conforme necessário.
-        private const int MapWidth = 2000;
-        private const int MapHeight = 2000;
-
-        // Matriz de câmera usada no render
-        private Matrix? _cameraTransform;
+        // Serviço de câmera
+        private readonly CameraService _cameraService;
 
         // Font para UI (vamos criar uma simples)
         private SpriteFont _font;
@@ -44,12 +41,26 @@ namespace CubeSurvivor
         {
             _graphics = new GraphicsDeviceManager(this);
             _world = new GameWorld();
+            
+            // Inicializar factories
+            _playerFactory = new PlayerFactory();
+            _enemyFactory = new EnemyFactory();
+            _bulletFactory = new BulletFactory();
+            
+            // Inicializar serviço de câmera
+            _cameraService = new CameraService(
+                GameConfig.ScreenWidth, 
+                GameConfig.ScreenHeight, 
+                GameConfig.MapWidth, 
+                GameConfig.MapHeight
+            );
+            
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
 
             // Configurar tamanho da janela
-            _graphics.PreferredBackBufferWidth = ScreenWidth;
-            _graphics.PreferredBackBufferHeight = ScreenHeight;
+            _graphics.PreferredBackBufferWidth = GameConfig.ScreenWidth;
+            _graphics.PreferredBackBufferHeight = GameConfig.ScreenHeight;
         }
 
         protected override void Initialize()
@@ -118,8 +129,8 @@ namespace CubeSurvivor
             // não chama RestartGame diretamente aqui — vamos checar IsGameOver depois do Update
             _gameStateSystem.OnGameOver += () => { /* flag disparada — Game1.Update irá reiniciar */ };
 
-            _inputSystem = new PlayerInputSystem();
-            _inputSystem.SetScreenSize(ScreenWidth, ScreenHeight);
+            _inputSystem = new PlayerInputSystem(_bulletFactory);
+            _inputSystem.SetScreenSize(GameConfig.ScreenWidth, GameConfig.ScreenHeight);
             _world.AddSystem(_inputSystem);
             _world.AddSystem(new AISystem());
             _world.AddSystem(new MovementSystem());
@@ -129,8 +140,8 @@ namespace CubeSurvivor
             _world.AddSystem(_gameStateSystem);
 
             // Sistema de spawn (spawna nas bordas do mapa finito)
-            Rectangle spawnArea = new Rectangle(0, 0, MapWidth, MapHeight);
-            _world.AddSystem(new EnemySpawnSystem(spawnArea, 2f, 100)); // 2s intervalo, max 100 inimigos
+            Rectangle spawnArea = new Rectangle(0, 0, GameConfig.MapWidth, GameConfig.MapHeight);
+            _world.AddSystem(new EnemySpawnSystem(spawnArea, _enemyFactory, GameConfig.EnemySpawnInterval, GameConfig.MaxEnemies));
 
             // Criar jogador no centro da tela
             InitializeGame();
@@ -138,8 +149,8 @@ namespace CubeSurvivor
 
         private void InitializeGame()
         {
-            Vector2 playerStartPosition = new Vector2(ScreenWidth / 2, ScreenHeight / 2);
-            PlayerEntity.Create(_world, playerStartPosition);
+            Vector2 playerStartPosition = new Vector2(GameConfig.ScreenWidth / 2, GameConfig.ScreenHeight / 2);
+            _playerFactory.CreatePlayer(_world, playerStartPosition);
         }
 
         private void RestartGame()
@@ -159,52 +170,22 @@ namespace CubeSurvivor
         {
             // Atualizar todos os sistemas
             _world.Update(gameTime);
+            
             // Se houve GameOver, executamos o restart uma vez aqui (fora do loop de sistemas)
             if (_gameStateSystem.IsGameOver)
             {
                 RestartGame();
                 _gameStateSystem.Reset();
-                // reset camera para centro do jogador recém-criado
-                var p = _world.GetEntitiesWithComponent<Components.PlayerInputComponent>().FirstOrDefault();
-                if (p != null)
-                {
-                    var t = p.GetComponent<Components.TransformComponent>();
-                    if (t != null)
-                    {
-                        _cameraTransform = Matrix.CreateTranslation(-t.Position.X + ScreenWidth / 2f, -t.Position.Y + ScreenHeight / 2f, 0f);
-                    }
-                }
             }
 
-            // Clamp da posição do jogador dentro dos limites do mapa e atualizar câmera
+            // Atualizar câmera com base no jogador
             var player = _world.GetEntitiesWithComponent<Components.PlayerInputComponent>().FirstOrDefault();
             if (player != null)
             {
-                var t = player.GetComponent<Components.TransformComponent>();
-                var s = player.GetComponent<Components.SpriteComponent>();
-                if (t != null && s != null)
-                {
-                    var half = s.Size / 2f;
-                    t.Position = new Vector2(
-                        MathHelper.Clamp(t.Position.X, half.X, MapWidth - half.X),
-                        MathHelper.Clamp(t.Position.Y, half.Y, MapHeight - half.Y)
-                    );
-
-                    // Calcular posição da câmera centralizada no jogador, mas dentro dos limites do mapa
-                    float camX = t.Position.X;
-                    float camY = t.Position.Y;
-
-                    camX = MathHelper.Clamp(camX, ScreenWidth / 2f, MapWidth - ScreenWidth / 2f);
-                    camY = MathHelper.Clamp(camY, ScreenHeight / 2f, MapHeight - ScreenHeight / 2f);
-
-                    _cameraTransform = Matrix.CreateTranslation(-camX + ScreenWidth / 2f, -camY + ScreenHeight / 2f, 0f);
-                }
-            }
-
-            // Atualizar InputSystem com transformação da câmera
-            if (_inputSystem != null)
-            {
-                _inputSystem.SetCameraTransform(_cameraTransform);
+                _cameraService.Update(player);
+                
+                // Atualizar InputSystem com transformação da câmera
+                _inputSystem?.SetCameraTransform(_cameraService.Transform);
             }
 
             base.Update(gameTime);
@@ -222,12 +203,11 @@ namespace CubeSurvivor
                 // Limpar para preto antes de desenhar o piso em tiles
                 GraphicsDevice.Clear(Color.Black);
 
-                var cam = _cameraTransform ?? Matrix.Identity;
-                _spriteBatch.Begin(transformMatrix: cam);
+                _spriteBatch.Begin(transformMatrix: _cameraService.Transform);
 
                 const int tileSize = 128; // a imagem é 64x64
-                int tilesX = (MapWidth + tileSize - 1) / tileSize;
-                int tilesY = (MapHeight + tileSize - 1) / tileSize;
+                int tilesX = (GameConfig.MapWidth + tileSize - 1) / tileSize;
+                int tilesY = (GameConfig.MapHeight + tileSize - 1) / tileSize;
 
                 for (int y = 0; y < tilesY; y++)
                 {
@@ -242,7 +222,7 @@ namespace CubeSurvivor
             }
 
             // Renderizar entidades usando a transformação da câmera
-            _renderSystem.Draw(_cameraTransform);
+            _renderSystem.Draw(_cameraService.Transform);
 
             // Renderizar UI
             _uiSystem.Draw();

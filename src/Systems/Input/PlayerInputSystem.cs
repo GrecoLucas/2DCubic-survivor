@@ -17,8 +17,14 @@ namespace CubeSurvivor.Systems
         private const float BulletSpeed = 600f;
         private const float BulletDamage = 25f;
 
+        private readonly IBulletFactory _bulletFactory;
         private MouseState _previousMouseState;
         private Matrix? _cameraTransform;
+
+        public PlayerInputSystem(IBulletFactory bulletFactory)
+        {
+            _bulletFactory = bulletFactory;
+        }
 
         public void SetScreenSize(int width, int height)
         {
@@ -97,7 +103,7 @@ namespace CubeSurvivor.Systems
                         bulletDirection.Normalize();
                         // Criar projétil ligeiramente à frente do player
                         Vector2 bulletStartPos = transform.Position + bulletDirection * BulletSpawnOffset;
-                        BulletEntity.Create(World, bulletStartPos, bulletDirection, BulletSpeed, BulletDamage);
+                        _bulletFactory.CreateBullet(World, bulletStartPos, bulletDirection, BulletSpeed, BulletDamage);
                         input.ShootCooldown = input.ShootCooldownTime;
                     }
                 }

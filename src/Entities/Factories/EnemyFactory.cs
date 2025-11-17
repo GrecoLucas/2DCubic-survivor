@@ -7,9 +7,9 @@ namespace CubeSurvivor.Entities
     /// <summary>
     /// Factory para criar inimigos
     /// </summary>
-    public static class EnemyEntity
+    public sealed class EnemyFactory : IEnemyFactory
     {
-        public static Entity Create(IGameWorld world, Vector2 position)
+        public Entity CreateEnemy(IGameWorld world, Vector2 position)
         {
             var enemy = world.CreateEntity("Enemy");
 
@@ -26,3 +26,4 @@ namespace CubeSurvivor.Entities
         }
     }
 }
+

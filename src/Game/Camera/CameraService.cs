@@ -1,0 +1,56 @@
+using CubeSurvivor.Components;
+using CubeSurvivor.Core;
+using Microsoft.Xna.Framework;
+
+namespace CubeSurvivor
+{
+    /// <summary>
+    /// Serviço de câmera para centralizar a lógica de câmera
+    /// </summary>
+    public sealed class CameraService
+    {
+        public Matrix Transform { get; private set; } = Matrix.Identity;
+
+        private readonly int _screenWidth;
+        private readonly int _screenHeight;
+        private readonly int _mapWidth;
+        private readonly int _mapHeight;
+
+        public CameraService(int screenWidth, int screenHeight, int mapWidth, int mapHeight)
+        {
+            _screenWidth = screenWidth;
+            _screenHeight = screenHeight;
+            _mapWidth = mapWidth;
+            _mapHeight = mapHeight;
+        }
+
+        public void Update(Entity player)
+        {
+            var transform = player.GetComponent<TransformComponent>();
+            var sprite = player.GetComponent<SpriteComponent>();
+            if (transform == null || sprite == null)
+                return;
+
+            var half = sprite.Size / 2f;
+
+            // Clamp player inside map
+            transform.Position = new Vector2(
+                MathHelper.Clamp(transform.Position.X, half.X, _mapWidth - half.X),
+                MathHelper.Clamp(transform.Position.Y, half.Y, _mapHeight - half.Y)
+            );
+
+            float camX = transform.Position.X;
+            float camY = transform.Position.Y;
+
+            camX = MathHelper.Clamp(camX, _screenWidth / 2f, _mapWidth - _screenWidth / 2f);
+            camY = MathHelper.Clamp(camY, _screenHeight / 2f, _mapHeight - _screenHeight / 2f);
+
+            Transform = Matrix.CreateTranslation(
+                -camX + _screenWidth / 2f,
+                -camY + _screenHeight / 2f,
+                0f
+            );
+        }
+    }
+}
+

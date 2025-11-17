@@ -1,8 +1,59 @@
-bin/
-obj/
+# Build outputs
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio / VS Code
 .vs/
+.vscode/
 *.user
+*.userprefs
 *.suo
-*.cache
-Content/bin/
-Content/obj/
+*.sln.docstates
+*.vsidx
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.svclog
+*.scc
+
+# MonoGame
+*.cachefile
+*.mgcontent
+
+# OS junk
+[Tt]humbs.db
+*.DS_Store
+Desktop.ini
+$RECYCLE.BIN/
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# NuGet
+*.nupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+
+# Test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+# Rider
+.idea/
+*.sln.iml

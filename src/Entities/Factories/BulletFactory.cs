@@ -7,9 +7,9 @@ namespace CubeSurvivor.Entities
     /// <summary>
     /// Factory para criar projéteis
     /// </summary>
-    public static class BulletEntity
+    public sealed class BulletFactory : IBulletFactory
     {
-        public static Entity Create(IGameWorld world, Vector2 position, Vector2 direction, float speed = 500f, float damage = 25f)
+        public Entity CreateBullet(IGameWorld world, Vector2 position, Vector2 direction, float speed, float damage)
         {
             var bullet = world.CreateEntity("Bullet");
 

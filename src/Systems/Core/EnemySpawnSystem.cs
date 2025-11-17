@@ -9,17 +9,19 @@ namespace CubeSurvivor.Systems
     /// <summary>
     /// Sistema de spawn de inimigos
     /// </summary>
-    public class EnemySpawnSystem : GameSystem
+    public sealed class EnemySpawnSystem : GameSystem
     {
+        private readonly IEnemyFactory _enemyFactory;
         private readonly Random _random = new Random();
         private float _spawnTimer;
         private readonly float _spawnInterval;
         private readonly int _maxEnemies;
         private readonly Rectangle _spawnArea;
 
-        public EnemySpawnSystem(Rectangle spawnArea, float spawnInterval = 2f, int maxEnemies = 50)
+        public EnemySpawnSystem(Rectangle spawnArea, IEnemyFactory enemyFactory, float spawnInterval = 2f, int maxEnemies = 50)
         {
             _spawnArea = spawnArea;
+            _enemyFactory = enemyFactory;
             _spawnInterval = spawnInterval;
             _maxEnemies = maxEnemies;
             _spawnTimer = 0f;
@@ -49,7 +51,7 @@ namespace CubeSurvivor.Systems
         {
             // Gerar posição aleatória nas bordas do spawn area
             Vector2 position = GetRandomSpawnPosition();
-            EnemyEntity.Create(World, position);
+            _enemyFactory.CreateEnemy(World, position);
         }
 
         private Vector2 GetRandomSpawnPosition()

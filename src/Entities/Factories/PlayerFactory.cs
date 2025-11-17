@@ -7,9 +7,9 @@ namespace CubeSurvivor.Entities
     /// <summary>
     /// Factory para criar a entidade do jogador
     /// </summary>
-    public static class PlayerEntity
+    public sealed class PlayerFactory : IPlayerFactory
     {
-        public static Entity Create(IGameWorld world, Vector2 position)
+        public Entity CreatePlayer(IGameWorld world, Vector2 position)
         {
             var player = world.CreateEntity("Player");
 
@@ -26,3 +26,4 @@ namespace CubeSurvivor.Entities
         }
     }
 }
+
