@@ -30,7 +30,7 @@ namespace CubeSurvivor.Systems
         {
             // Encontrar o jogador
             Entity player = null;
-            foreach (var entity in World.GetEntitiesWithComponent<InputComponent>())
+            foreach (var entity in World.GetEntitiesWithComponent<PlayerInputComponent>())
             {
                 player = entity;
                 break;

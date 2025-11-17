@@ -26,7 +26,7 @@ namespace CubeSurvivor.Systems
             // Verificar se o jogador está morto — somente se não estivermos em GameOver já
             if (_gameOverRaised) return;
 
-            foreach (var entity in World.GetEntitiesWithComponent<InputComponent>())
+            foreach (var entity in World.GetEntitiesWithComponent<PlayerInputComponent>())
             {
                 var health = entity.GetComponent<HealthComponent>();
                 if (health != null && !health.IsAlive)

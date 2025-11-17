@@ -7,7 +7,7 @@ namespace CubeSurvivor.Systems
     /// <summary>
     /// Sistema que aplica velocidade às posições das entidades
     /// </summary>
-    public class MovementSystem : GameSystem
+    public sealed class MovementSystem : GameSystem
     {
         public override void Update(GameTime gameTime)
         {

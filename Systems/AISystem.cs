@@ -8,13 +8,13 @@ namespace CubeSurvivor.Systems
     /// <summary>
     /// Sistema de IA que faz inimigos perseguirem o jogador
     /// </summary>
-    public class AISystem : GameSystem
+    public sealed class AISystem : GameSystem
     {
         public override void Update(GameTime gameTime)
         {
             // Encontrar o jogador
             Entity player = null;
-            foreach (var entity in World.GetEntitiesWithComponent<InputComponent>())
+            foreach (var entity in World.GetEntitiesWithComponent<PlayerInputComponent>())
             {
                 player = entity;
                 break;

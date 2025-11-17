@@ -60,8 +60,8 @@ namespace CubeSurvivor.Systems
                     (int)sprite.Size.Y
                 );
 
-                // Não aplicar rotação ao player (entidades com InputComponent)
-                float rotation = entity.HasComponent<Components.InputComponent>() ? 0f : transform.Rotation;
+                // Não aplicar rotação ao player (entidades com PlayerInputComponent)
+                float rotation = entity.HasComponent<PlayerInputComponent>() ? 0f : transform.Rotation;
 
                 _spriteBatch.Draw(
                     _pixelTexture,

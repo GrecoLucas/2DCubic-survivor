@@ -9,7 +9,7 @@ namespace CubeSurvivor.Entities
     /// </summary>
     public static class PlayerEntity
     {
-        public static Entity Create(GameWorld world, Vector2 position)
+        public static Entity Create(IGameWorld world, Vector2 position)
         {
             var player = world.CreateEntity("Player");
 
@@ -17,9 +17,9 @@ namespace CubeSurvivor.Entities
             player.AddComponent(new TransformComponent(position));
             player.AddComponent(new SpriteComponent(Color.Blue, 50f, 50f)); // Quadrado azul 50x50
             player.AddComponent(new VelocityComponent(200f)); // Velocidade de 200 pixels/segundo
-            player.AddComponent(new InputComponent());
+            player.AddComponent(new PlayerInputComponent());
             player.AddComponent(new HealthComponent(100f)); // 100 de vida
-            player.AddComponent(new ColliderComponent(50f, 50f, "Player"));
+            player.AddComponent(new ColliderComponent(50f, 50f, ColliderTag.Player));
             player.AddComponent(new GunComponent()); // Arma preta
 
             return player;

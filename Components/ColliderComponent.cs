@@ -10,16 +10,16 @@ namespace CubeSurvivor.Components
     {
         public Vector2 Size { get; set; }
         public bool IsTrigger { get; set; }
-        public string Tag { get; set; }
+        public ColliderTag Tag { get; set; }
 
-        public ColliderComponent(Vector2 size, string tag = "Default")
+        public ColliderComponent(Vector2 size, ColliderTag tag = ColliderTag.Default)
         {
             Size = size;
             Tag = tag;
             IsTrigger = false;
         }
 
-        public ColliderComponent(float width, float height, string tag = "Default") 
+        public ColliderComponent(float width, float height, ColliderTag tag = ColliderTag.Default) 
             : this(new Vector2(width, height), tag)
         {
         }

@@ -7,9 +7,9 @@ namespace CubeSurvivor.Core
     /// </summary>
     public abstract class GameSystem
     {
-        protected GameWorld World { get; private set; }
+        protected IGameWorld World { get; private set; }
 
-        public void Initialize(GameWorld world)
+        public void Initialize(IGameWorld world)
         {
             World = world;
         }

@@ -7,7 +7,7 @@ namespace CubeSurvivor.Core
     /// <summary>
     /// Gerencia todas as entidades e sistemas do jogo
     /// </summary>
-    public class GameWorld
+    public class GameWorld : IGameWorld
     {
         private readonly List<Entity> _entities = new List<Entity>();
         private readonly List<GameSystem> _systems = new List<GameSystem>();

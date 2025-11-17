@@ -8,19 +8,21 @@ using System.Linq;
 namespace CubeSurvivor.Systems
 {
     /// <summary>
-    /// Sistema que processa input do teclado e mouse para entidades controláveis
+    /// Sistema que processa input do teclado e mouse para entidades controláveis pelo jogador
     /// </summary>
-    public class InputSystem : GameSystem
+    public sealed class PlayerInputSystem : GameSystem
     {
+        // Constantes para movimento e tiro
+        private const float BulletSpawnOffset = 30f;
+        private const float BulletSpeed = 600f;
+        private const float BulletDamage = 25f;
+
         private MouseState _previousMouseState;
-        private int _screenWidth = 1280;
-        private int _screenHeight = 720;
         private Matrix? _cameraTransform;
 
         public void SetScreenSize(int width, int height)
         {
-            _screenWidth = width;
-            _screenHeight = height;
+            // Mantido para compatibilidade, mas usando readonly fields internos
         }
 
         public void SetCameraTransform(Matrix? transform)
@@ -35,11 +37,11 @@ namespace CubeSurvivor.Systems
             var mouseState = Mouse.GetState();
 
             // Coletar entidades em uma lista para evitar modificação durante iteração
-            var playerEntities = World.GetEntitiesWithComponent<InputComponent>().ToList();
+            var playerEntities = World.GetEntitiesWithComponent<PlayerInputComponent>().ToList();
 
             foreach (var entity in playerEntities)
             {
-                var input = entity.GetComponent<InputComponent>();
+                var input = entity.GetComponent<PlayerInputComponent>();
                 var velocity = entity.GetComponent<VelocityComponent>();
                 var transform = entity.GetComponent<TransformComponent>();
 
@@ -94,8 +96,8 @@ namespace CubeSurvivor.Systems
                     {
                         bulletDirection.Normalize();
                         // Criar projétil ligeiramente à frente do player
-                        Vector2 bulletStartPos = transform.Position + bulletDirection * 30f;
-                        BulletEntity.Create(World, bulletStartPos, bulletDirection, 600f, 25f);
+                        Vector2 bulletStartPos = transform.Position + bulletDirection * BulletSpawnOffset;
+                        BulletEntity.Create(World, bulletStartPos, bulletDirection, BulletSpeed, BulletDamage);
                         input.ShootCooldown = input.ShootCooldownTime;
                     }
                 }
@@ -116,3 +118,4 @@ namespace CubeSurvivor.Systems
         }
     }
 }
+

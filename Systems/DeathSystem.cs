@@ -8,7 +8,7 @@ namespace CubeSurvivor.Systems
     /// <summary>
     /// Sistema que remove entidades mortas (sem vida)
     /// </summary>
-    public class DeathSystem : GameSystem
+    public sealed class DeathSystem : GameSystem
     {
         public override void Update(GameTime gameTime)
         {

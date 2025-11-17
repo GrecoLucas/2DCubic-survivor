@@ -8,7 +8,7 @@ namespace CubeSurvivor.Systems
     /// <summary>
     /// Sistema que gerencia projéteis (movimento, lifetime, remoção)
     /// </summary>
-    public class BulletSystem : GameSystem
+    public sealed class BulletSystem : GameSystem
     {
         private const int MapWidth = 2000;
         private const int MapHeight = 2000;

@@ -14,15 +14,15 @@ namespace CubeSurvivor
     /// </summary>
     public class Game1 : Game
     {
-        private GraphicsDeviceManager _graphics;
+        private readonly GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
         
         // Sistema ECS
-        private GameWorld _world;
+        private readonly GameWorld _world;
         private RenderSystem _renderSystem;
         private UISystem _uiSystem;
         private GameStateSystem _gameStateSystem;
-        private InputSystem _inputSystem;
+        private PlayerInputSystem _inputSystem;
 
         // Configurações da tela
         private const int ScreenWidth = 1280;
@@ -43,6 +43,7 @@ namespace CubeSurvivor
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
+            _world = new GameWorld();
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
 
@@ -53,8 +54,6 @@ namespace CubeSurvivor
 
         protected override void Initialize()
         {
-            // Criar o mundo ECS
-            _world = new GameWorld();
 
             base.Initialize();
         }
@@ -119,7 +118,7 @@ namespace CubeSurvivor
             // não chama RestartGame diretamente aqui — vamos checar IsGameOver depois do Update
             _gameStateSystem.OnGameOver += () => { /* flag disparada — Game1.Update irá reiniciar */ };
 
-            _inputSystem = new InputSystem();
+            _inputSystem = new PlayerInputSystem();
             _inputSystem.SetScreenSize(ScreenWidth, ScreenHeight);
             _world.AddSystem(_inputSystem);
             _world.AddSystem(new AISystem());
@@ -166,7 +165,7 @@ namespace CubeSurvivor
                 RestartGame();
                 _gameStateSystem.Reset();
                 // reset camera para centro do jogador recém-criado
-                var p = _world.GetEntitiesWithComponent<Components.InputComponent>().FirstOrDefault();
+                var p = _world.GetEntitiesWithComponent<Components.PlayerInputComponent>().FirstOrDefault();
                 if (p != null)
                 {
                     var t = p.GetComponent<Components.TransformComponent>();
@@ -178,7 +177,7 @@ namespace CubeSurvivor
             }
 
             // Clamp da posição do jogador dentro dos limites do mapa e atualizar câmera
-            var player = _world.GetEntitiesWithComponent<Components.InputComponent>().FirstOrDefault();
+            var player = _world.GetEntitiesWithComponent<Components.PlayerInputComponent>().FirstOrDefault();
             if (player != null)
             {
                 var t = player.GetComponent<Components.TransformComponent>();
