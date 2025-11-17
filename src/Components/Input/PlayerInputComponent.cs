@@ -9,7 +9,7 @@ namespace CubeSurvivor.Components
     {
         public bool IsPlayerControlled { get; set; } = true;
         public float ShootCooldown { get; set; } = 0f;
-        public float ShootCooldownTime { get; set; } = 0.2f; // 0.2 segundos entre tiros
+        public float ShootCooldownTime { get; set; } = 0.5f; // 0.2 segundos entre tiros
     }
 }
 

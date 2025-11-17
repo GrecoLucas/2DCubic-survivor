@@ -91,10 +91,9 @@ namespace CubeSurvivor.Systems
                     input.ShootCooldown -= deltaTime;
                 }
 
-                // Detectar clique do mouse para atirar
-                if (mouseState.LeftButton == ButtonState.Pressed && 
-                    _previousMouseState.LeftButton == ButtonState.Released &&
-                    input.ShootCooldown <= 0)
+                
+                // Ao segurar o botão esquerdo, continua atirando respeitando o cooldown
+                if (mouseState.LeftButton == ButtonState.Pressed && input.ShootCooldown <= 0)
                 {
                     // Criar projétil na direção do mouse
                     Vector2 bulletDirection = mouseWorldPos - transform.Position;
