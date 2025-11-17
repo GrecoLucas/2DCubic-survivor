@@ -22,6 +22,7 @@ namespace CubeSurvivor
         private RenderSystem _renderSystem;
         private UISystem _uiSystem;
         private GameStateSystem _gameStateSystem;
+        private InputSystem _inputSystem;
 
         // Configurações da tela
         private const int ScreenWidth = 1280;
@@ -118,10 +119,14 @@ namespace CubeSurvivor
             // não chama RestartGame diretamente aqui — vamos checar IsGameOver depois do Update
             _gameStateSystem.OnGameOver += () => { /* flag disparada — Game1.Update irá reiniciar */ };
 
-            _world.AddSystem(new InputSystem());
+            _inputSystem = new InputSystem();
+            _inputSystem.SetScreenSize(ScreenWidth, ScreenHeight);
+            _world.AddSystem(_inputSystem);
             _world.AddSystem(new AISystem());
             _world.AddSystem(new MovementSystem());
+            _world.AddSystem(new BulletSystem());
             _world.AddSystem(new CollisionSystem());
+            _world.AddSystem(new DeathSystem());
             _world.AddSystem(_gameStateSystem);
 
             // Sistema de spawn (spawna nas bordas do mapa finito)
@@ -195,6 +200,12 @@ namespace CubeSurvivor
 
                     _cameraTransform = Matrix.CreateTranslation(-camX + ScreenWidth / 2f, -camY + ScreenHeight / 2f, 0f);
                 }
+            }
+
+            // Atualizar InputSystem com transformação da câmera
+            if (_inputSystem != null)
+            {
+                _inputSystem.SetCameraTransform(_cameraTransform);
             }
 
             base.Update(gameTime);

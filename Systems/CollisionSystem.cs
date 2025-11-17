@@ -10,9 +10,12 @@ namespace CubeSurvivor.Systems
     /// </summary>
     public class CollisionSystem : GameSystem
     {
+        private readonly List<Entity> _bulletsToRemove = new List<Entity>();
+
         public override void Update(GameTime gameTime)
         {
             float deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
+            _bulletsToRemove.Clear();
 
             // Coletar todas as entidades com colliders
             var entities = new List<Entity>(World.GetEntitiesWithComponent<ColliderComponent>());
@@ -24,6 +27,12 @@ namespace CubeSurvivor.Systems
                 {
                     CheckCollision(entities[i], entities[j], deltaTime);
                 }
+            }
+
+            // Remover projéteis que colidiram
+            foreach (var bullet in _bulletsToRemove)
+            {
+                World.RemoveEntity(bullet);
             }
         }
 
@@ -53,10 +62,31 @@ namespace CubeSurvivor.Systems
 
         private void HandleCollision(Entity entityA, Entity entityB, float deltaTime)
         {
-            // Colisão: Jogador vs Inimigo
-            var playerA = entityA.GetComponent<InputComponent>();
+            // Colisão: Projétil vs Inimigo
+            var bulletA = entityA.GetComponent<BulletComponent>();
             var enemyB = entityB.GetComponent<EnemyComponent>();
 
+            if (bulletA != null && enemyB != null)
+            {
+                DamageEnemy(entityB, bulletA);
+                // Marcar projétil para remoção
+                _bulletsToRemove.Add(entityA);
+                return;
+            }
+
+            var bulletB = entityB.GetComponent<BulletComponent>();
+            var enemyA = entityA.GetComponent<EnemyComponent>();
+
+            if (bulletB != null && enemyA != null)
+            {
+                DamageEnemy(entityA, bulletB);
+                // Marcar projétil para remoção
+                _bulletsToRemove.Add(entityB);
+                return;
+            }
+
+            // Colisão: Jogador vs Inimigo
+            var playerA = entityA.GetComponent<InputComponent>();
             if (playerA != null && enemyB != null)
             {
                 DamagePlayer(entityA, entityB, deltaTime);
@@ -64,12 +94,20 @@ namespace CubeSurvivor.Systems
             }
 
             var playerB = entityB.GetComponent<InputComponent>();
-            var enemyA = entityA.GetComponent<EnemyComponent>();
-
             if (playerB != null && enemyA != null)
             {
                 DamagePlayer(entityB, entityA, deltaTime);
             }
+        }
+
+        private void DamageEnemy(Entity enemy, BulletComponent bullet)
+        {
+            var health = enemy.GetComponent<HealthComponent>();
+            if (health == null || bullet == null)
+                return;
+
+            // Aplicar dano do projétil
+            health.TakeDamage(bullet.Damage);
         }
 
         private void DamagePlayer(Entity player, Entity enemy, float deltaTime)

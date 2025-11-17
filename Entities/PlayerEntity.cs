@@ -20,6 +20,7 @@ namespace CubeSurvivor.Entities
             player.AddComponent(new InputComponent());
             player.AddComponent(new HealthComponent(100f)); // 100 de vida
             player.AddComponent(new ColliderComponent(50f, 50f, "Player"));
+            player.AddComponent(new GunComponent()); // Arma preta
 
             return player;
         }

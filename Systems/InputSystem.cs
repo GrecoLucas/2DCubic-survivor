@@ -1,25 +1,49 @@
 using CubeSurvivor.Components;
 using CubeSurvivor.Core;
+using CubeSurvivor.Entities;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
+using System.Linq;
 
 namespace CubeSurvivor.Systems
 {
     /// <summary>
-    /// Sistema que processa input do teclado para entidades controláveis
+    /// Sistema que processa input do teclado e mouse para entidades controláveis
     /// </summary>
     public class InputSystem : GameSystem
     {
+        private MouseState _previousMouseState;
+        private int _screenWidth = 1280;
+        private int _screenHeight = 720;
+        private Matrix? _cameraTransform;
+
+        public void SetScreenSize(int width, int height)
+        {
+            _screenWidth = width;
+            _screenHeight = height;
+        }
+
+        public void SetCameraTransform(Matrix? transform)
+        {
+            _cameraTransform = transform;
+        }
+
         public override void Update(GameTime gameTime)
         {
+            float deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
             var keyboardState = Keyboard.GetState();
+            var mouseState = Mouse.GetState();
 
-            foreach (var entity in World.GetEntitiesWithComponent<InputComponent>())
+            // Coletar entidades em uma lista para evitar modificação durante iteração
+            var playerEntities = World.GetEntitiesWithComponent<InputComponent>().ToList();
+
+            foreach (var entity in playerEntities)
             {
                 var input = entity.GetComponent<InputComponent>();
                 var velocity = entity.GetComponent<VelocityComponent>();
+                var transform = entity.GetComponent<TransformComponent>();
 
-                if (input == null || velocity == null || !input.Enabled)
+                if (input == null || velocity == null || transform == null || !input.Enabled)
                     continue;
 
                 // Calcular direção baseada em WASD
@@ -39,7 +63,56 @@ namespace CubeSurvivor.Systems
                     direction.Normalize();
 
                 velocity.Velocity = direction * velocity.Speed;
+
+                // Calcular posição do mouse no mundo
+                Vector2 mouseScreenPos = new Vector2(mouseState.X, mouseState.Y);
+                Vector2 mouseWorldPos = ScreenToWorld(mouseScreenPos);
+
+                // Calcular direção do mouse em relação ao player
+                Vector2 aimDirection = mouseWorldPos - transform.Position;
+                if (aimDirection != Vector2.Zero)
+                {
+                    aimDirection.Normalize();
+                    // Calcular rotação em radianos (Math.Atan2 retorna ângulo em radianos)
+                    transform.Rotation = (float)System.Math.Atan2(aimDirection.Y, aimDirection.X);
+                }
+
+                // Atualizar cooldown de tiro
+                if (input.ShootCooldown > 0)
+                {
+                    input.ShootCooldown -= deltaTime;
+                }
+
+                // Detectar clique do mouse para atirar
+                if (mouseState.LeftButton == ButtonState.Pressed && 
+                    _previousMouseState.LeftButton == ButtonState.Released &&
+                    input.ShootCooldown <= 0)
+                {
+                    // Criar projétil na direção do mouse
+                    Vector2 bulletDirection = mouseWorldPos - transform.Position;
+                    if (bulletDirection != Vector2.Zero)
+                    {
+                        bulletDirection.Normalize();
+                        // Criar projétil ligeiramente à frente do player
+                        Vector2 bulletStartPos = transform.Position + bulletDirection * 30f;
+                        BulletEntity.Create(World, bulletStartPos, bulletDirection, 600f, 25f);
+                        input.ShootCooldown = input.ShootCooldownTime;
+                    }
+                }
             }
+
+            _previousMouseState = mouseState;
+        }
+
+        private Vector2 ScreenToWorld(Vector2 screenPos)
+        {
+            if (_cameraTransform.HasValue)
+            {
+                // Inverter a transformação da câmera para obter posição no mundo
+                Matrix inverseTransform = Matrix.Invert(_cameraTransform.Value);
+                return Vector2.Transform(screenPos, inverseTransform);
+            }
+            return screenPos;
         }
     }
 }

@@ -60,16 +60,61 @@ namespace CubeSurvivor.Systems
                     (int)sprite.Size.Y
                 );
 
+                // Não aplicar rotação ao player (entidades com InputComponent)
+                float rotation = entity.HasComponent<Components.InputComponent>() ? 0f : transform.Rotation;
+
                 _spriteBatch.Draw(
                     _pixelTexture,
                     rectangle,
                     null,
                     sprite.Color,
-                    transform.Rotation,
+                    rotation,
                     Vector2.Zero,
                     SpriteEffects.None,
                     0f
                 );
+
+                // Desenhar armas (WeaponComponent)
+                var weapon = entity.GetComponent<WeaponComponent>();
+                if (weapon != null && weapon.Enabled)
+                {
+                    // Calcular direção oposta ao mouse (lado oposto do raio)
+                    float oppositeRotation = transform.Rotation + MathHelper.Pi;
+                    
+                    // Calcular offset na direção oposta ao mouse
+                    // Usar offsetDistance do componente ou padrão de 0 para centro exato
+                    float offsetDistance = -35f;
+                    Vector2 offsetDirection = new Vector2(
+                        (float)System.Math.Cos(oppositeRotation),
+                        (float)System.Math.Sin(oppositeRotation)
+                    );
+                    Vector2 weaponOffset = offsetDirection * offsetDistance;
+                    
+                    // Posição do centro da arma: centro do player + offset na direção oposta
+                    Vector2 weaponCenter = transform.Position + weaponOffset;
+                    
+                    // Criar retângulo para a arma (tamanho)
+                    Rectangle weaponRect = new Rectangle(
+                        0,
+                        0,
+                        (int)weapon.Size.X,
+                        (int)weapon.Size.Y
+                    );
+
+                    // Desenhar arma rotacionada na direção oposta ao mouse
+                    // Usar weaponCenter como posição (Vector2) e origem no centro para rotação correta
+                    _spriteBatch.Draw(
+                        _pixelTexture,
+                        weaponCenter, // Posição do centro da arma (Vector2)
+                        weaponRect, // Retângulo de origem (tamanho)
+                        weapon.Color,
+                        oppositeRotation, // Rotação oposta ao mouse
+                        weapon.Size / 2f, // Origem no centro para rotação correta
+                        1f, // Escala
+                        SpriteEffects.None,
+                        0f
+                    );
+                }
             }
 
             _spriteBatch.End();
