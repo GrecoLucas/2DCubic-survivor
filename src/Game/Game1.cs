@@ -26,6 +26,8 @@ namespace CubeSurvivor
         private PlayerInputSystem _inputSystem;
         private InventoryInputSystem _inventoryInputSystem;
         private InventoryUISystem _inventoryUISystem;
+        private InventoryDragDropSystem _inventoryDragDropSystem;
+        private ConsumptionUISystem _consumptionUISystem;
 
         // Factories
         private readonly IPlayerFactory _playerFactory;
@@ -159,9 +161,18 @@ public Game1()
                 _inventoryUISystem.Initialize(_world);
                 _inventoryUISystem.SetScreenSize(GameConfig.ScreenWidth, GameConfig.ScreenHeight);
                 
+                _inventoryDragDropSystem = new InventoryDragDropSystem();
+                _inventoryDragDropSystem.Initialize(_world);
+                _inventoryDragDropSystem.SetScreenSize(GameConfig.ScreenWidth, GameConfig.ScreenHeight);
+                
+                _consumptionUISystem = new ConsumptionUISystem(_spriteBatch, _font, _pixelTexture);
+                _consumptionUISystem.Initialize(_world);
+                _consumptionUISystem.SetScreenSize(GameConfig.ScreenWidth, GameConfig.ScreenHeight);
+                
                 Console.WriteLine("[Game1] Adicionando sistemas ao mundo...");
                 _world.AddSystem(_inputSystem);
                 _world.AddSystem(_inventoryInputSystem);
+                _world.AddSystem(_inventoryDragDropSystem); // Sistema de drag-and-drop
                 _world.AddSystem(new PickupSystem()); // Sistema de coleta de itens
                 _world.AddSystem(new ConsumptionSystem()); // Sistema de consumo de itens
                 _world.AddSystem(new AISystem());
@@ -213,11 +224,32 @@ public Game1()
 
         protected override void Update(GameTime gameTime)
         {
+            // Verificar se o inventário está aberto (pausa o jogo)
+            bool inventoryOpen = false;
+            var player = _world.GetEntitiesWithComponent<Components.PlayerInputComponent>().FirstOrDefault();
+            if (player != null)
+            {
+                var inventoryComp = player.GetComponent<Inventory.Components.InventoryComponent>();
+                if (inventoryComp != null && inventoryComp.IsUIOpen)
+                {
+                    inventoryOpen = true;
+                }
+            }
+            
+            // Verificar se há upgrade pendente
             bool upgradePending = _world.GetEntitiesWithComponent<Components.UpgradeRequestComponent>().Any();
-            if (!upgradePending)
+            
+            // Só atualizar o mundo se não estiver pausado (inventário fechado e sem upgrade pendente)
+            if (!upgradePending && !inventoryOpen)
             {
                 // Atualizar todos os sistemas
                 _world.Update(gameTime);
+            }
+            else if (inventoryOpen)
+            {
+                // Quando inventário aberto, apenas atualizar sistemas de inventário
+                _inventoryInputSystem?.Update(gameTime);
+                _inventoryDragDropSystem?.Update(gameTime);
             }
             
             if (_gameStateSystem.IsGameOver)
@@ -227,8 +259,7 @@ public Game1()
                 _gameStateSystem.Reset();
             }
 
-            var player = _world.GetEntitiesWithComponent<Components.PlayerInputComponent>().FirstOrDefault();
-            if (player != null)
+            if (player != null && !inventoryOpen)
             {
                 _cameraService.Update(player);
                 _inputSystem?.SetCameraTransform(_cameraService.Transform);
@@ -275,6 +306,9 @@ public Game1()
             
             // Renderizar inventário (hotbar sempre visível, full inventory quando aberto)
             _inventoryUISystem?.Draw();
+            
+            // Renderizar UI de consumo (countdown timer)
+            _consumptionUISystem?.Draw();
 
             base.Draw(gameTime);
         }

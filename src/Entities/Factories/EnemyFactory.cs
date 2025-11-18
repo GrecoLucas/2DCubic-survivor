@@ -21,6 +21,11 @@ namespace CubeSurvivor.Entities
             enemy.AddComponent(new EnemyComponent(10f, 1f)); // 10 de dano, 1 segundo de cooldown
             enemy.AddComponent(new HealthComponent(50f)); // 50 de vida
             enemy.AddComponent(new ColliderComponent(40f, 40f, ColliderTag.Enemy));
+            
+            // Adicionar loot drop (10% de chance de dropar cérebro)
+            var lootDrop = new LootDropComponent();
+            lootDrop.AddLoot("brain", 0.1f); // 10% de chance
+            enemy.AddComponent(lootDrop);
 
             return enemy;
         }
