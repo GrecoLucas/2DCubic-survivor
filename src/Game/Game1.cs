@@ -194,12 +194,16 @@ public Game1()
             InitializeGame();
         }
 
+        
+
         protected override void Update(GameTime gameTime)
         {
-            // Remover ou comentar este log pois será chamado a cada frame
-            // Console.WriteLine($"[Game1] Update - Frame time: {gameTime.ElapsedGameTime.TotalMilliseconds}ms");
-            
-            _world.Update(gameTime);
+            bool upgradePending = _world.GetEntitiesWithComponent<Components.UpgradeRequestComponent>().Any();
+            if (!upgradePending)
+            {
+                // Atualizar todos os sistemas
+                _world.Update(gameTime);
+            }
             
             if (_gameStateSystem.IsGameOver)
             {

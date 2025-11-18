@@ -17,13 +17,16 @@ namespace CubeSurvivor.Entities
             player.AddComponent(new TransformComponent(position));
             player.AddComponent(new SpriteComponent(Color.Blue, 50f, 50f)); // Quadrado azul 50x50
             player.AddComponent(new VelocityComponent(200f)); // Velocidade de 200 pixels/segundo
-            player.AddComponent(new PlayerInputComponent());
+            // Player input with initial projectile properties
+            player.AddComponent(new PlayerInputComponent(bulletSpeed: 600f, bulletDamage: 25f, bulletSize: 8f, shootCooldownTime: 0.5f));
             player.AddComponent(new HealthComponent(100f)); // 100 de vida
             player.AddComponent(new ColliderComponent(50f, 50f, ColliderTag.Player));
             player.AddComponent(new GunComponent()); // Arma preta
+
+            // Novo: componente de XP
+            player.AddComponent(new XpComponent(100f));
 
             return player;
         }
     }
 }
-

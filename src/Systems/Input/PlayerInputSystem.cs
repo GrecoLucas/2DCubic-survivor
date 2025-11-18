@@ -14,8 +14,6 @@ namespace CubeSurvivor.Systems
     {
         // Constantes para movimento e tiro
         private const float BulletSpawnOffset = 30f;
-        private const float BulletSpeed = 600f;
-        private const float BulletDamage = 25f;
 
         private readonly IBulletFactory _bulletFactory;
         private MouseState _previousMouseState;
@@ -91,7 +89,6 @@ namespace CubeSurvivor.Systems
                     input.ShootCooldown -= deltaTime;
                 }
 
-                
                 // Ao segurar o botão esquerdo, continua atirando respeitando o cooldown
                 if (mouseState.LeftButton == ButtonState.Pressed && input.ShootCooldown <= 0)
                 {
@@ -102,7 +99,11 @@ namespace CubeSurvivor.Systems
                         bulletDirection.Normalize();
                         // Criar projétil ligeiramente à frente do player
                         Vector2 bulletStartPos = transform.Position + bulletDirection * BulletSpawnOffset;
-                        _bulletFactory.CreateBullet(World, bulletStartPos, bulletDirection, BulletSpeed, BulletDamage);
+                        // Usar propriedades do componente para configurar projétil (permite upgrades)
+                        float speed = input.BulletSpeed;
+                        float damage = input.BulletDamage;
+                        float size = input.BulletSize;
+                        _bulletFactory.CreateBullet(World, bulletStartPos, bulletDirection, speed, damage, size);
                         input.ShootCooldown = input.ShootCooldownTime;
                     }
                 }

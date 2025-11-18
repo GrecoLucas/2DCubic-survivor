@@ -8,7 +8,7 @@ namespace CubeSurvivor.Entities
     /// </summary>
     public interface IBulletFactory
     {
-        Entity CreateBullet(IGameWorld world, Vector2 position, Vector2 direction, float speed, float damage);
+        Entity CreateBullet(IGameWorld world, Vector2 position, Vector2 direction, float speed, float damage, float size = 8f);
     }
 }
 
