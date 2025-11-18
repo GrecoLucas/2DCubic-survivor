@@ -1,6 +1,7 @@
 using CubeSurvivor.Components;
 using CubeSurvivor.Core;
 using CubeSurvivor.Inventory.Components;
+using CubeSurvivor.Inventory.Items.Consumables;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using System.Linq;
@@ -9,7 +10,7 @@ namespace CubeSurvivor.Inventory.Systems
 {
     /// <summary>
     /// Sistema responsável por processar input relacionado ao inventário.
-    /// Gerencia seleção de hotbar (1-4, scroll) e toggle da UI (I).
+    /// Gerencia seleção de hotbar (1-4, scroll), toggle da UI (I) e consumo de itens.
     /// </summary>
     public sealed class InventoryInputSystem : GameSystem
     {
@@ -60,6 +61,9 @@ namespace CubeSurvivor.Inventory.Systems
                 
                 // Atualizar item segurado baseado na seleção atual
                 UpdateHeldItem(entity, inventory, heldItemComp);
+                
+                // Processar consumo de itens consumíveis
+                HandleConsumption(entity, currentMouseState, _previousMouseState, inventory);
             }
             
             _previousKeyboardState = currentKeyboardState;
@@ -126,6 +130,42 @@ namespace CubeSurvivor.Inventory.Systems
                     // Equipar novo item
                     newItem.OnEquip(entity);
                     heldItemComp.SetHeldItem(newItem, inventory.SelectedHotbarIndex);
+                }
+            }
+        }
+        
+        private void HandleConsumption(Entity entity, MouseState current, MouseState previous, Core.IInventory inventory)
+        {
+            // Verificar se o botão esquerdo foi pressionado (não segurado)
+            bool leftClickPressed = current.LeftButton == ButtonState.Pressed && 
+                                   previous.LeftButton == ButtonState.Released;
+            
+            if (!leftClickPressed)
+                return;
+            
+            // Obter item selecionado
+            var selectedStack = inventory.GetSelectedHotbarItem();
+            if (selectedStack == null || selectedStack.IsEmpty)
+                return;
+            
+            // Verificar se é consumível
+            if (selectedStack.Item is ConsumableItem consumable)
+            {
+                // Verificar se já está consumindo
+                var consumptionComp = entity.GetComponent<ConsumptionComponent>();
+                if (consumptionComp == null)
+                {
+                    // Adicionar componente se não existir
+                    consumptionComp = new ConsumptionComponent();
+                    entity.AddComponent(consumptionComp);
+                }
+                
+                // Só iniciar novo consumo se não estiver já consumindo
+                if (!consumptionComp.IsConsuming)
+                {
+                    // Iniciar consumo
+                    consumable.OnConsumptionStart(entity);
+                    consumptionComp.StartConsumption(consumable, inventory.SelectedHotbarIndex);
                 }
             }
         }

@@ -162,6 +162,8 @@ public Game1()
                 Console.WriteLine("[Game1] Adicionando sistemas ao mundo...");
                 _world.AddSystem(_inputSystem);
                 _world.AddSystem(_inventoryInputSystem);
+                _world.AddSystem(new PickupSystem()); // Sistema de coleta de itens
+                _world.AddSystem(new ConsumptionSystem()); // Sistema de consumo de itens
                 _world.AddSystem(new AISystem());
                 _world.AddSystem(new MovementSystem());
                 _world.AddSystem(new BulletSystem());
@@ -171,6 +173,7 @@ public Game1()
 
                 Rectangle spawnArea = new Rectangle(0, 0, GameConfig.MapWidth, GameConfig.MapHeight);
                 _world.AddSystem(new EnemySpawnSystem(spawnArea, _enemyFactory, GameConfig.EnemySpawnInterval, GameConfig.MaxEnemies));
+                _world.AddSystem(new AppleSpawnSystem(spawnArea)); // Sistema de spawn de maçãs
 
                 Console.WriteLine("[Game1] Criando jogador...");
                 InitializeGame();
