@@ -36,18 +36,18 @@ namespace CubeSurvivor
         private SpriteFont _font;
         private Texture2D _pixelTexture;
         private Texture2D _floorTexture;
-
-        public Game1()
+public Game1()
         {
+            Console.WriteLine("[Game1] Construtor iniciado");
             _graphics = new GraphicsDeviceManager(this);
             _world = new GameWorld();
             
-            // Inicializar factories
+            Console.WriteLine("[Game1] Criando factories...");
             _playerFactory = new PlayerFactory();
             _enemyFactory = new EnemyFactory();
             _bulletFactory = new BulletFactory();
             
-            // Inicializar serviço de câmera
+            Console.WriteLine("[Game1] Criando serviço de câmera...");
             _cameraService = new CameraService(
                 GameConfig.ScreenWidth, 
                 GameConfig.ScreenHeight, 
@@ -58,99 +58,127 @@ namespace CubeSurvivor
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
 
-            // Configurar tamanho da janela
             _graphics.PreferredBackBufferWidth = GameConfig.ScreenWidth;
             _graphics.PreferredBackBufferHeight = GameConfig.ScreenHeight;
+            
+            Console.WriteLine("[Game1] Construtor concluído");
         }
 
         protected override void Initialize()
         {
-
+            Console.WriteLine("[Game1] Initialize() iniciado");
             base.Initialize();
+            Console.WriteLine("[Game1] Initialize() concluído");
         }
 
         protected override void LoadContent()
         {
-            _spriteBatch = new SpriteBatch(GraphicsDevice);
-
-            // Criar textura de pixel
-            _pixelTexture = new Texture2D(GraphicsDevice, 1, 1);
-            _pixelTexture.SetData(new[] { Color.White });
-
-            // Tentar carregar textura do piso a partir da pasta assets (vários caminhos tentados)
+            Console.WriteLine("[Game1] LoadContent() iniciado");
+            
             try
             {
-                string[] candidates = new[]
-                {
-                    Path.Combine("assets", "floor.png"),
-                    Path.Combine(Content.RootDirectory ?? "Content", "..", "assets", "floor.png"),
-                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "floor.png"),
-                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..\\..\\..\\assets\\floor.png")
-                };
+                Console.WriteLine("[Game1] Criando SpriteBatch...");
+                _spriteBatch = new SpriteBatch(GraphicsDevice);
 
-                var floorPath = candidates.FirstOrDefault(File.Exists);
-                if (floorPath != null)
+                Console.WriteLine("[Game1] Criando textura de pixel...");
+                _pixelTexture = new Texture2D(GraphicsDevice, 1, 1);
+                _pixelTexture.SetData(new[] { Color.White });
+
+                Console.WriteLine("[Game1] Tentando carregar textura do piso...");
+                try
                 {
-                    using (var stream = File.OpenRead(floorPath))
+                    string[] candidates = new[]
                     {
-                        _floorTexture = Texture2D.FromStream(GraphicsDevice, stream);
+                        Path.Combine("assets", "floor.png"),
+                        Path.Combine(Content.RootDirectory ?? "Content", "..", "assets", "floor.png"),
+                        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "floor.png"),
+                        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..\\..\\..\\assets\\floor.png")
+                    };
+
+                    foreach (var path in candidates)
+                    {
+                        Console.WriteLine($"  Tentando: {path}");
+                        if (File.Exists(path))
+                        {
+                            Console.WriteLine($"  ✓ Arquivo encontrado!");
+                            using (var stream = File.OpenRead(path))
+                            {
+                                _floorTexture = Texture2D.FromStream(GraphicsDevice, stream);
+                            }
+                            break;
+                        }
+                    }
+                    
+                    if (_floorTexture == null)
+                    {
+                        Console.WriteLine("  ⚠ Nenhuma textura encontrada, usando cor sólida");
                     }
                 }
-                else
+                catch (Exception ex)
                 {
+                    Console.WriteLine($"  ⚠ Erro ao carregar textura: {ex.Message}");
                     _floorTexture = null;
                 }
+
+                Console.WriteLine("[Game1] Carregando fonte DefaultFont...");
+                try
+                {
+                    _font = Content.Load<SpriteFont>("DefaultFont");
+                    Console.WriteLine("[Game1] Fonte carregada com sucesso!");
+                }
+                catch (Exception ex)
+                {
+                    _font = null;
+                    Console.WriteLine($"[Game1] Não foi possível carregar DefaultFont: {ex.GetType().Name} - {ex.Message}");
+                    Console.WriteLine("[Game1] Continuando sem fonte, a UI desenhará apenas barras visuais.");
+                }
+
+                Console.WriteLine("[Game1] Configurando sistemas...");
+                _renderSystem = new RenderSystem(_spriteBatch);
+                _renderSystem.Initialize(_world);
+                _renderSystem.CreatePixelTexture(GraphicsDevice);
+
+                _uiSystem = new UISystem(_spriteBatch, _font, _pixelTexture);
+                _uiSystem.Initialize(_world);
+
+                _gameStateSystem = new GameStateSystem();
+                _gameStateSystem.Initialize(_world);
+                _gameStateSystem.OnGameOver += () => { Console.WriteLine("[GameState] GameOver disparado!"); };
+
+                _inputSystem = new PlayerInputSystem(_bulletFactory);
+                _inputSystem.SetScreenSize(GameConfig.ScreenWidth, GameConfig.ScreenHeight);
+                
+                Console.WriteLine("[Game1] Adicionando sistemas ao mundo...");
+                _world.AddSystem(_inputSystem);
+                _world.AddSystem(new AISystem());
+                _world.AddSystem(new MovementSystem());
+                _world.AddSystem(new BulletSystem());
+                _world.AddSystem(new CollisionSystem());
+                _world.AddSystem(new DeathSystem());
+                _world.AddSystem(_gameStateSystem);
+
+                Rectangle spawnArea = new Rectangle(0, 0, GameConfig.MapWidth, GameConfig.MapHeight);
+                _world.AddSystem(new EnemySpawnSystem(spawnArea, _enemyFactory, GameConfig.EnemySpawnInterval, GameConfig.MaxEnemies));
+
+                Console.WriteLine("[Game1] Criando jogador...");
+                InitializeGame();
+                
+                Console.WriteLine("[Game1] LoadContent() concluído com sucesso!");
             }
-            catch
+            catch (Exception ex)
             {
-                _floorTexture = null;
+                Console.WriteLine($"[Game1] ERRO em LoadContent: {ex.Message}");
+                Console.WriteLine($"Stack: {ex.StackTrace}");
+                throw;
             }
-
-            // Tentar carregar font (se não existir, UI será sem texto)
-            try
-            {
-                _font = Content.Load<SpriteFont>("DefaultFont");
-            }
-            catch
-            {
-                _font = null; // UI funcionará sem texto
-            }
-
-            // Configurar sistemas
-            _renderSystem = new RenderSystem(_spriteBatch);
-            _renderSystem.Initialize(_world);
-            _renderSystem.CreatePixelTexture(GraphicsDevice);
-
-            _uiSystem = new UISystem(_spriteBatch, _font, _pixelTexture);
-            _uiSystem.Initialize(_world);
-
-            _gameStateSystem = new GameStateSystem();
-            _gameStateSystem.Initialize(_world);
-            // não chama RestartGame diretamente aqui — vamos checar IsGameOver depois do Update
-            _gameStateSystem.OnGameOver += () => { /* flag disparada — Game1.Update irá reiniciar */ };
-
-            _inputSystem = new PlayerInputSystem(_bulletFactory);
-            _inputSystem.SetScreenSize(GameConfig.ScreenWidth, GameConfig.ScreenHeight);
-            _world.AddSystem(_inputSystem);
-            _world.AddSystem(new AISystem());
-            _world.AddSystem(new MovementSystem());
-            _world.AddSystem(new BulletSystem());
-            _world.AddSystem(new CollisionSystem());
-            _world.AddSystem(new DeathSystem());
-            _world.AddSystem(_gameStateSystem);
-
-            // Sistema de spawn (spawna nas bordas do mapa finito)
-            Rectangle spawnArea = new Rectangle(0, 0, GameConfig.MapWidth, GameConfig.MapHeight);
-            _world.AddSystem(new EnemySpawnSystem(spawnArea, _enemyFactory, GameConfig.EnemySpawnInterval, GameConfig.MaxEnemies));
-
-            // Criar jogador no centro da tela
-            InitializeGame();
         }
 
         private void InitializeGame()
         {
+            Console.WriteLine("[Game1] InitializeGame() iniciado");
             Vector2 playerStartPosition = new Vector2(GameConfig.ScreenWidth / 2, GameConfig.ScreenHeight / 2);
             _playerFactory.CreatePlayer(_world, playerStartPosition);
+            Console.WriteLine($"[Game1] Jogador criado em {playerStartPosition}");
         }
 
         private void RestartGame()
@@ -168,23 +196,22 @@ namespace CubeSurvivor
 
         protected override void Update(GameTime gameTime)
         {
-            // Atualizar todos os sistemas
+            // Remover ou comentar este log pois será chamado a cada frame
+            // Console.WriteLine($"[Game1] Update - Frame time: {gameTime.ElapsedGameTime.TotalMilliseconds}ms");
+            
             _world.Update(gameTime);
             
-            // Se houve GameOver, executamos o restart uma vez aqui (fora do loop de sistemas)
             if (_gameStateSystem.IsGameOver)
             {
+                Console.WriteLine("[Game1] GameOver detectado, reiniciando...");
                 RestartGame();
                 _gameStateSystem.Reset();
             }
 
-            // Atualizar câmera com base no jogador
             var player = _world.GetEntitiesWithComponent<Components.PlayerInputComponent>().FirstOrDefault();
             if (player != null)
             {
                 _cameraService.Update(player);
-                
-                // Atualizar InputSystem com transformação da câmera
                 _inputSystem?.SetCameraTransform(_cameraService.Transform);
             }
 

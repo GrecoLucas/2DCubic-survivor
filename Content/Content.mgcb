@@ -11,3 +11,14 @@
 
 
 #---------------------------------- Content ---------------------------------#
+
+#begin DefaultFont.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:FontName=Arial
+/processorParam:Size=14
+/processorParam:Spacing=0
+/processorParam:UseKerning=True
+/processorParam:Style=Regular
+/processorParam:CharacterRegions=32-126
+/build:DefaultFont.spritefont
