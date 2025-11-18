@@ -2,6 +2,7 @@ using CubeSurvivor.Components;
 using CubeSurvivor.Core;
 using CubeSurvivor; // para GameConfig
 using Microsoft.Xna.Framework;
+using System;
 using System.Linq;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -106,85 +107,99 @@ namespace CubeSurvivor.Systems
             _previousMouseState = Mouse.GetState();
         }
 
-        private void DrawUpgradeMenu(Entity player)
+private void DrawUpgradeMenu(Entity player)
+{
+    // 1. Configurações de Cores e Layout
+    var overlayColor = new Color(0, 0, 0, 180);
+    var panelColor = new Color(40, 44, 52); // Cinza azulado escuro (estilo moderno)
+    var borderColor = Color.White * 0.2f;   // Borda sutil
+
+    int boxW = 500, boxH = 260; // Aumentei um pouco a altura
+    int centerX = GameConfig.ScreenWidth / 2;
+    int centerY = GameConfig.ScreenHeight / 2;
+    Rectangle box = new Rectangle(centerX - boxW / 2, centerY - boxH / 2, boxW, boxH);
+
+    // 2. Desenhar o Fundo
+    _spriteBatch.Draw(_pixelTexture, new Rectangle(0, 0, GameConfig.ScreenWidth, GameConfig.ScreenHeight), overlayColor);
+    _spriteBatch.Draw(_pixelTexture, box, panelColor);
+    
+    // (Opcional) Desenhar uma borda na caixa principal
+    _spriteBatch.Draw(_pixelTexture, new Rectangle(box.X, box.Y, boxW, 2), borderColor); // Topo
+    _spriteBatch.Draw(_pixelTexture, new Rectangle(box.X, box.Y + boxH - 2, boxW, 2), borderColor); // Base
+    _spriteBatch.Draw(_pixelTexture, new Rectangle(box.X, box.Y, 2, boxH), borderColor); // Esquerda
+    _spriteBatch.Draw(_pixelTexture, new Rectangle(box.X + boxW - 2, box.Y, 2, boxH), borderColor); // Direita
+
+    // 3. Título
+    if (_font != null)
+    {
+        string title = "CHOOSE AN UPGRADE";
+        Vector2 titleSize = _font.MeasureString(title);
+        Vector2 titlePos = new Vector2(centerX - titleSize.X / 2, box.Y + 20);
+        _spriteBatch.DrawString(_font, title, titlePos, Color.Gold);
+    }
+
+    // 4. Definição dos Botões e Lógica
+    // Aqui definimos o Nome e a Ação (Lambda) de cada botão
+    var input = player.GetComponent<PlayerInputComponent>();
+    if (input == null) return;
+
+    var upgrades = new[]
+    {
+        new { Name = "Speed (+20%)", Action = (Action)(() => input.BulletSpeed *= 1.2f) },
+        new { Name = "Size (+25%)",  Action = (Action)(() => input.BulletSize *= 1.25f) },
+        new { Name = "Fire Rate (+15%)", Action = (Action)(() => {
+            input.ShootCooldownTime *= 0.85f;
+            if (input.ShootCooldownTime < 0.05f) input.ShootCooldownTime = 0.05f;
+        })}
+    };
+
+    // 5. Desenhar e Processar Botões
+    var mouse = Mouse.GetState();
+    bool mouseClicked = mouse.LeftButton == ButtonState.Pressed && _previousMouseState.LeftButton == ButtonState.Released;
+    
+    int btnW = 400, btnH = 50;
+    int startY = box.Y + 70;
+    int gap = 10; // Espaço entre botões
+
+    for (int i = 0; i < upgrades.Length; i++)
+    {
+        Rectangle btnRect = new Rectangle(centerX - btnW / 2, startY + (btnH + gap) * i, btnW, btnH);
+        bool isHovered = btnRect.Contains(mouse.X, mouse.Y);
+
+        // Se clicou neste botão
+        if (isHovered && mouseClicked)
         {
-            // Overlay semi-transparente
-            Rectangle full = new Rectangle(0, 0, GameConfig.ScreenWidth, GameConfig.ScreenHeight);
-            _spriteBatch.Draw(_pixelTexture, full, new Color(0, 0, 0, 180));
-
-            // Caixa central
-            int boxW = 500, boxH = 220;
-            int boxX = (GameConfig.ScreenWidth - boxW) / 2;
-            int boxY = (GameConfig.ScreenHeight - boxH) / 2;
-            Rectangle box = new Rectangle(boxX, boxY, boxW, boxH);
-            _spriteBatch.Draw(_pixelTexture, box, Color.DarkSlateGray);
-
-            // Título
-            if (_font != null)
-            {
-                var title = "Choose an Upgrade";
-                Vector2 titlePos = new Vector2(boxX + 20, boxY + 12);
-                _spriteBatch.DrawString(_font, title, titlePos, Color.White);
-            }
-
-            // Botões (3 opções)
-            int btnW = 420, btnH = 48;
-            int btnX = boxX + 40;
-            int btnY = boxY + 60;
-            Rectangle btnSpeed = new Rectangle(btnX, btnY, btnW, btnH);
-            Rectangle btnSize = new Rectangle(btnX, btnY + 56, btnW, btnH);
-            Rectangle btnRate = new Rectangle(btnX, btnY + 112, btnW, btnH);
-
-            _spriteBatch.Draw(_pixelTexture, btnSpeed, Color.DimGray);
-            _spriteBatch.Draw(_pixelTexture, btnSize, Color.DimGray);
-            _spriteBatch.Draw(_pixelTexture, btnRate, Color.DimGray);
-
-            if (_font != null)
-            {
-                _spriteBatch.DrawString(_font, "Projectile Speed", new Vector2(btnSpeed.X + 12, btnSpeed.Y + 12), Color.White);
-                _spriteBatch.DrawString(_font, "Projectile Size", new Vector2(btnSize.X + 12, btnSize.Y + 12), Color.White);
-                _spriteBatch.DrawString(_font, "Fire Rate (Cadence)", new Vector2(btnRate.X + 12, btnRate.Y + 12), Color.White);
-            }
-
-            // Processar clique do mouse (apenas clique esquerdo novo)
-            var mouse = Mouse.GetState();
-            bool clicked = mouse.LeftButton == ButtonState.Pressed && _previousMouseState.LeftButton == ButtonState.Released;
-            if (clicked && player != null)
-            {
-                var input = player.GetComponent<PlayerInputComponent>();
-                if (input != null)
-                {
-                    bool applied = false;
-                    if (btnSpeed.Contains(mouse.X, mouse.Y))
-                    {
-                        var old = input.BulletSpeed;
-                        input.BulletSpeed *= 1.2f; // +20% speed
-                        System.Console.WriteLine($"[Melhoria] Velocidade do projétil era {old:F1} virou {input.BulletSpeed:F1}");
-                        applied = true;
-                    }
-                    else if (btnSize.Contains(mouse.X, mouse.Y))
-                    {
-                        var old = input.BulletSize;
-                        input.BulletSize *= 1.25f; // +25% size
-                        System.Console.WriteLine($"[Melhoria] Tamanho do projétil era {old:F1} virou {input.BulletSize:F1}");
-                        applied = true;
-                    }
-                    else if (btnRate.Contains(mouse.X, mouse.Y))
-                    {
-                        var old = input.ShootCooldownTime;
-                        input.ShootCooldownTime *= 0.85f; // -15% cooldown (faster fire)
-                        if (input.ShootCooldownTime < 0.05f) input.ShootCooldownTime = 0.05f;
-                        System.Console.WriteLine($"[Melhoria] Tempo de recarga era {old:F2}s virou {input.ShootCooldownTime:F2}s");
-                        applied = true;
-                    }
-
-                    // Remover o pedido de upgrade (menu fechado) e retomar o jogo somente se uma opção foi escolhida
-                    if (applied)
-                    {
-                        player.RemoveComponent<UpgradeRequestComponent>();
-                    }
-                }
-            }
+            upgrades[i].Action.Invoke(); // Executa a lógica definida na lista acima
+            System.Console.WriteLine($"[Upgrade] Aplicado: {upgrades[i].Name}");
+            player.RemoveComponent<UpgradeRequestComponent>(); // Fecha o menu
+            return; // Sai da função imediatamente
         }
+
+        // Desenha o botão individual usando o helper
+        DrawButton(btnRect, upgrades[i].Name, isHovered);
+    }
+}
+
+// Método auxiliar para desenhar um botão bonito e centralizado
+private void DrawButton(Rectangle rect, string text, bool isHovered)
+{
+    // Cores mudam se o mouse estiver em cima (Hover)
+    Color bgColor = isHovered ? Color.CornflowerBlue : Color.DimGray;
+    Color textColor = isHovered ? Color.White : Color.LightGray;
+
+    // Fundo do botão
+    _spriteBatch.Draw(_pixelTexture, rect, bgColor);
+
+    // Texto centralizado matematicamente
+    if (_font != null)
+    {
+        Vector2 textSize = _font.MeasureString(text);
+        Vector2 textPos = new Vector2(
+            rect.X + (rect.Width - textSize.X) / 2,
+            rect.Y + (rect.Height - textSize.Y) / 2
+        );
+        _spriteBatch.DrawString(_font, text, textPos, textColor);
+    }
+}
     }
 }

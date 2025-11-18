@@ -24,7 +24,7 @@ namespace CubeSurvivor.Entities
             player.AddComponent(new GunComponent()); // Arma preta
 
             // Novo: componente de XP
-            player.AddComponent(new XpComponent(100f));
+            player.AddComponent(new XpComponent(20f));
 
             return player;
         }
