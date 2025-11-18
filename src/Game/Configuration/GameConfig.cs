@@ -6,7 +6,7 @@ namespace CubeSurvivor
     public static class GameConfig
     {
         // Configurações de tela
-        public const int ScreenWidth = 1280;
+        public const int ScreenWidth = 1080;
         public const int ScreenHeight = 720;
 
         // Limites do mapa
@@ -34,6 +34,34 @@ namespace CubeSurvivor
         public const float EnemySize = 40f;
         public const float EnemyDamage = 10f;
         public const float EnemyAttackCooldown = 1f;
+
+        // Taxa de aumento da dificuldade por minuto (ex: 0.1 = +10% por minuto)
+        public const float EnemyDifficultyIncreasePerMinute = 0.90f;
+
+        // Menor intervalo possível entre spawns (segundos)
+        public const float EnemySpawnIntervalMin = 0.02f;
+
+        /// <summary>
+        /// Retorna o multiplicador de dificuldade baseado no tempo (segundos).
+        /// Ex: após 2 minutos e r=0.1 => m = 1 + 2 * 0.1 = 1.2
+        /// </summary>
+        public static float GetEnemyDifficultyMultiplier(float elapsedSeconds)
+        {
+            float minutes = elapsedSeconds / 60f;
+            return 1f + minutes * EnemyDifficultyIncreasePerMinute;
+        }
+    
+            /// <summary>
+        /// Retorna o intervalo atual de spawn aplicado sobre um intervalo base,
+        /// reduzido conforme a dificuldade aumenta, com um piso em EnemySpawnIntervalMin.
+        /// </summary>
+        public static float GetSpawnInterval(float baseInterval, float elapsedSeconds)
+        {
+            float m = GetEnemyDifficultyMultiplier(elapsedSeconds);
+            float scaled = baseInterval / m;
+            return System.MathF.Max(scaled, EnemySpawnIntervalMin);
+        }
     }
+    
 }
 
