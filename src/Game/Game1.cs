@@ -1,6 +1,7 @@
 using CubeSurvivor.Core;
 using CubeSurvivor.Entities;
 using CubeSurvivor.Systems;
+using CubeSurvivor.Inventory.Systems;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System.Linq;
@@ -23,6 +24,8 @@ namespace CubeSurvivor
         private UISystem _uiSystem;
         private GameStateSystem _gameStateSystem;
         private PlayerInputSystem _inputSystem;
+        private InventoryInputSystem _inventoryInputSystem;
+        private InventoryUISystem _inventoryUISystem;
 
         // Factories
         private readonly IPlayerFactory _playerFactory;
@@ -148,8 +151,17 @@ public Game1()
                 _inputSystem = new PlayerInputSystem(_bulletFactory);
                 _inputSystem.SetScreenSize(GameConfig.ScreenWidth, GameConfig.ScreenHeight);
                 
+                // Sistemas de inventário
+                _inventoryInputSystem = new InventoryInputSystem();
+                _inventoryInputSystem.Initialize(_world);
+                
+                _inventoryUISystem = new InventoryUISystem(_spriteBatch, _font, _pixelTexture);
+                _inventoryUISystem.Initialize(_world);
+                _inventoryUISystem.SetScreenSize(GameConfig.ScreenWidth, GameConfig.ScreenHeight);
+                
                 Console.WriteLine("[Game1] Adicionando sistemas ao mundo...");
                 _world.AddSystem(_inputSystem);
+                _world.AddSystem(_inventoryInputSystem);
                 _world.AddSystem(new AISystem());
                 _world.AddSystem(new MovementSystem());
                 _world.AddSystem(new BulletSystem());
@@ -257,6 +269,9 @@ public Game1()
 
             // Renderizar UI
             _uiSystem.Draw();
+            
+            // Renderizar inventário (hotbar sempre visível, full inventory quando aberto)
+            _inventoryUISystem?.Draw();
 
             base.Draw(gameTime);
         }

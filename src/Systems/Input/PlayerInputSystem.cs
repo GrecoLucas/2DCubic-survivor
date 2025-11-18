@@ -1,6 +1,8 @@
 using CubeSurvivor.Components;
 using CubeSurvivor.Core;
 using CubeSurvivor.Entities;
+using CubeSurvivor.Inventory.Components;
+using CubeSurvivor.Inventory.Items.Weapons;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using System.Linq;
@@ -89,9 +91,15 @@ namespace CubeSurvivor.Systems
                     input.ShootCooldown -= deltaTime;
                 }
 
+                // Verificar se tem arma equipada antes de atirar
+                var heldItemComp = entity.GetComponent<HeldItemComponent>();
+                bool hasGunEquipped = heldItemComp != null && heldItemComp.CurrentItem is GunItem;
+                
                 // Ao segurar o botão esquerdo, continua atirando respeitando o cooldown
-                if (mouseState.LeftButton == ButtonState.Pressed && input.ShootCooldown <= 0)
+                if (hasGunEquipped && mouseState.LeftButton == ButtonState.Pressed && input.ShootCooldown <= 0)
                 {
+                    var gun = heldItemComp.CurrentItem as GunItem;
+                    
                     // Criar projétil na direção do mouse
                     Vector2 bulletDirection = mouseWorldPos - transform.Position;
                     if (bulletDirection != Vector2.Zero)
@@ -99,12 +107,12 @@ namespace CubeSurvivor.Systems
                         bulletDirection.Normalize();
                         // Criar projétil ligeiramente à frente do player
                         Vector2 bulletStartPos = transform.Position + bulletDirection * BulletSpawnOffset;
-                        // Usar propriedades do componente para configurar projétil (permite upgrades)
-                        float speed = input.BulletSpeed;
-                        float damage = input.BulletDamage;
+                        // Usar propriedades da arma (permite diferentes armas com diferentes stats)
+                        float speed = gun.BulletSpeed;
+                        float damage = gun.Damage;
                         float size = input.BulletSize;
                         _bulletFactory.CreateBullet(World, bulletStartPos, bulletDirection, speed, damage, size);
-                        input.ShootCooldown = input.ShootCooldownTime;
+                        input.ShootCooldown = gun.ShootCooldown;
                     }
                 }
             }

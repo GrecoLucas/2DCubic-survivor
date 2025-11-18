@@ -15,7 +15,7 @@
 #begin DefaultFont.spritefont
 /importer:FontDescriptionImporter
 /processor:FontDescriptionProcessor
-/processorParam:FontName=Arial
+/processorParam:FontName=Liberation Sans
 /processorParam:Size=14
 /processorParam:Spacing=0
 /processorParam:UseKerning=True

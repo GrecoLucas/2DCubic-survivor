@@ -1,5 +1,8 @@
 using CubeSurvivor.Components;
 using CubeSurvivor.Core;
+using CubeSurvivor.Inventory.Components;
+using CubeSurvivor.Inventory.Core;
+using CubeSurvivor.Inventory.Items.Weapons;
 using Microsoft.Xna.Framework;
 
 namespace CubeSurvivor.Entities
@@ -21,10 +24,23 @@ namespace CubeSurvivor.Entities
             player.AddComponent(new PlayerInputComponent(bulletSpeed: 600f, bulletDamage: 25f, bulletSize: 8f, shootCooldownTime: 0.5f));
             player.AddComponent(new HealthComponent(100f)); // 100 de vida
             player.AddComponent(new ColliderComponent(50f, 50f, ColliderTag.Player));
-            player.AddComponent(new GunComponent()); // Arma preta
-
-            // Novo: componente de XP
+            
+            // Componente de XP
             player.AddComponent(new XpComponent(20f));
+            
+            // Criar e inicializar inventário
+            var inventory = new PlayerInventory(totalSlots: 16, hotbarSize: 4);
+            player.AddComponent(new InventoryComponent(inventory));
+            player.AddComponent(new HeldItemComponent());
+            
+            // Adicionar gun ao inventário (no primeiro slot da hotbar)
+            var gun = new GunItem();
+            inventory.AddItem(gun, 1);
+            
+            // Equipar automaticamente a gun ao criar o jogador
+            inventory.SelectHotbarSlot(0);
+            gun.OnEquip(player);
+            player.GetComponent<HeldItemComponent>().SetHeldItem(gun, 0);
 
             return player;
         }
