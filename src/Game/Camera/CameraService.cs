@@ -5,7 +5,8 @@ using Microsoft.Xna.Framework;
 namespace CubeSurvivor
 {
     /// <summary>
-    /// Serviço de câmera para centralizar a lógica de câmera
+    /// Serviço de câmera para centralizar a lógica de câmera.
+    /// Segue o jogador e mantém a câmera centralizada nele.
     /// </summary>
     public sealed class CameraService
     {
@@ -13,13 +14,22 @@ namespace CubeSurvivor
 
         private readonly int _screenWidth;
         private readonly int _screenHeight;
-        private readonly int _mapWidth;
-        private readonly int _mapHeight;
+        private int _mapWidth;
+        private int _mapHeight;
 
         public CameraService(int screenWidth, int screenHeight, int mapWidth, int mapHeight)
         {
             _screenWidth = screenWidth;
             _screenHeight = screenHeight;
+            _mapWidth = mapWidth;
+            _mapHeight = mapHeight;
+        }
+
+        /// <summary>
+        /// Atualiza as dimensões do mapa (útil quando carregado dinamicamente).
+        /// </summary>
+        public void SetMapSize(int mapWidth, int mapHeight)
+        {
             _mapWidth = mapWidth;
             _mapHeight = mapHeight;
         }

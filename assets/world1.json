@@ -1,0 +1,46 @@
+{
+  "mapWidth": 4000,
+  "mapHeight": 4000,
+  "safeZones": [
+    {
+      "x": 800,
+      "y": 600,
+      "width": 400,
+      "height": 300,
+      "opening": {
+        "x": 950,
+        "y": 850,
+        "width": 50,
+        "height": 50
+      }
+    },
+    {
+      "x": 1400,
+      "y": 1200,
+      "width": 300,
+      "height": 250,
+      "opening": {
+        "x": 1500,
+        "y": 1400,
+        "width": 50,
+        "height": 50
+      }
+    }
+  ],
+  "crates": [
+    {
+      "x": 1000,
+      "y": 800,
+      "isDestructible": true,
+      "maxHealth": 50
+    },
+    {
+      "x": 1500,
+      "y": 1300,
+      "isDestructible": false,
+      "maxHealth": 100
+    }
+  ],
+  "pickups": []
+}
+

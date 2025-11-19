@@ -39,6 +39,16 @@ namespace CubeSurvivor
     public sealed class LevelDefinition
     {
         /// <summary>
+        /// Largura do mapa em pixels. Pode sobrescrever GameConfig.MapWidth se definida.
+        /// </summary>
+        public int? MapWidth { get; set; }
+
+        /// <summary>
+        /// Altura do mapa em pixels. Pode sobrescrever GameConfig.MapHeight se definida.
+        /// </summary>
+        public int? MapHeight { get; set; }
+
+        /// <summary>
         /// Lista de caixas/obstáculos no mapa.
         /// </summary>
         public List<CrateDefinition> Crates { get; } = new();

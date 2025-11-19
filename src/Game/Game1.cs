@@ -1,4 +1,5 @@
 using CubeSurvivor.Core;
+using CubeSurvivor.Core.Spatial;
 using CubeSurvivor.Entities;
 using CubeSurvivor.Systems;
 using CubeSurvivor.Inventory.Systems;
@@ -39,6 +40,9 @@ namespace CubeSurvivor
         private TextureManager _textureManager;
         private SafeZoneManager _safeZoneManager;
         private LevelDefinition _levelDefinition;
+        private ISpatialIndex _spatialIndex;
+        private WorldBackgroundRenderer _backgroundRenderer;
+        private BulletSystem _bulletSystem;
 
         public Game1()
         {
@@ -92,6 +96,9 @@ namespace CubeSurvivor
                 Console.WriteLine("[Game1] Inicializando TextureManager...");
                 _textureManager = new TextureManager(GraphicsDevice);
 
+                Console.WriteLine("[Game1] Inicializando SpatialHashGrid...");
+                _spatialIndex = new SpatialHashGrid(cellSize: 128);
+
                 Console.WriteLine("[Game1] Inicializando SafeZoneManager...");
                 _safeZoneManager = new SafeZoneManager(_worldObjectFactory);
 
@@ -119,6 +126,19 @@ namespace CubeSurvivor
                 if (_playerFactory is PlayerFactory playerFactory)
                 {
                     playerFactory.SetTextureManager(_textureManager);
+                }
+
+                Console.WriteLine("[Game1] Inicializando WorldBackgroundRenderer...");
+                if (_floorTexture != null)
+                {
+                    _backgroundRenderer = new WorldBackgroundRenderer(
+                        _floorTexture,
+                        GameConfig.MapWidth,
+                        GameConfig.MapHeight,
+                        tileSize: 128,
+                        screenWidth: GameConfig.ScreenWidth,
+                        screenHeight: GameConfig.ScreenHeight
+                    );
                 }
 
                 Console.WriteLine("[Game1] Carregando fonte DefaultFont...");
@@ -180,8 +200,11 @@ namespace CubeSurvivor
                 _world.AddSystem(new ConsumptionSystem());
                 _world.AddSystem(new AISystem());
                 _world.AddSystem(new MovementSystem());
-                _world.AddSystem(new BulletSystem());
-                _world.AddSystem(new CollisionSystem());
+                
+                _bulletSystem = new BulletSystem();
+                _world.AddSystem(_bulletSystem);
+                
+                _world.AddSystem(new CollisionSystem(_spatialIndex));
                 _world.AddSystem(new DeathSystem(_textureManager));
                 _world.AddSystem(_gameStateSystem);
 
@@ -204,48 +227,52 @@ namespace CubeSurvivor
 
         private void CreateLevelDefinition()
         {
-            _levelDefinition = new LevelDefinition();
+            // Carregar mundo a partir de JSON (data-driven)
+            string worldPath = Path.Combine("assets", "world1.json");
+            _levelDefinition = WorldDefinitionLoader.LoadFromJson(worldPath);
 
-            // Criar uma zona segura (casa) no centro do mapa
-            int houseWidth = GameConfig.DefaultHouseWidth;
-            int houseHeight = GameConfig.DefaultHouseHeight;
-
-            int houseX = GameConfig.MapWidth / 2 - houseWidth / 2;
-            int houseY = GameConfig.MapHeight / 2 - houseHeight / 2;
-
-            var houseArea = new Rectangle(houseX, houseY, houseWidth, houseHeight);
-
-            // Criar abertura (porta) na parede inferior, centralizada
-            int wallBlockSize = GameConfig.WallBlockSize;
-            var openingArea = new Rectangle(
-                houseArea.Left + houseWidth / 2 - wallBlockSize / 2,
-                houseArea.Bottom - wallBlockSize,
-                wallBlockSize,
-                wallBlockSize
-            );
-
-            _levelDefinition.SafeZones.Add(new SafeZoneDefinition
+            if (_levelDefinition == null)
             {
-                Area = houseArea,
-                OpeningArea = openingArea
-            });
+                Console.WriteLine("[Game1] ⚠ Falha ao carregar mundo, usando mapa vazio");
+                _levelDefinition = new LevelDefinition();
+            }
 
-            Console.WriteLine($"[Game1] Nível definido com {_levelDefinition.SafeZones.Count} zona(s) segura(s).");
+            Console.WriteLine($"[Game1] Nível carregado: {_levelDefinition.SafeZones.Count} zona(s), {_levelDefinition.Crates.Count} caixa(s)");
         }
 
         private void InitializeGame()
         {
             Console.WriteLine("[Game1] InitializeGame() iniciado");
             
+            // Obter dimensões do mapa (do JSON ou usar padrão)
+            int mapWidth = _levelDefinition?.MapWidth ?? GameConfig.MapWidth;
+            int mapHeight = _levelDefinition?.MapHeight ?? GameConfig.MapHeight;
+
+            // Atualizar todos os sistemas com as dimensões corretas do mapa
+            _cameraService.SetMapSize(mapWidth, mapHeight);
+            _backgroundRenderer?.SetMapSize(mapWidth, mapHeight);
+            _bulletSystem?.SetMapSize(mapWidth, mapHeight);
+            Console.WriteLine($"[Game1] Sistemas configurados para mapa {mapWidth}x{mapHeight}");
+            
             // Inicializar zonas seguras (criar paredes)
             if (_levelDefinition != null)
             {
                 Console.WriteLine("[Game1] Inicializando zonas seguras...");
                 _safeZoneManager.InitializeZones(_world, _levelDefinition);
+
+                // Criar caixas/obstáculos definidos no JSON
+                if (_levelDefinition.Crates.Count > 0)
+                {
+                    Console.WriteLine($"[Game1] Criando {_levelDefinition.Crates.Count} caixas...");
+                    foreach (var crateDef in _levelDefinition.Crates)
+                    {
+                        _worldObjectFactory.CreateCrate(_world, crateDef.Position, crateDef.IsDestructible, crateDef.MaxHealth);
+                    }
+                }
             }
             
-            // Criar jogador no centro da tela (ou dentro da casa)
-            Vector2 playerStartPosition = new Vector2(GameConfig.MapWidth / 2, GameConfig.MapHeight / 2);
+            // Criar jogador mais para cima/esquerda, próximo das safe zones
+            Vector2 playerStartPosition = new Vector2(1000, 750);
             _playerFactory.CreatePlayer(_world, playerStartPosition);
             Console.WriteLine("[Game1] Jogador criado em " + playerStartPosition);
         }
@@ -304,30 +331,12 @@ namespace CubeSurvivor
 
         protected override void Draw(GameTime gameTime)
         {
-            if (_floorTexture == null)
+            GraphicsDevice.Clear(Color.Black);
+
+            // Desenhar fundo do mapa usando camera culling (muito mais eficiente)
+            if (_backgroundRenderer != null)
             {
-                GraphicsDevice.Clear(Color.ForestGreen);
-            }
-            else
-            {
-                GraphicsDevice.Clear(Color.Black);
-
-                _spriteBatch.Begin(transformMatrix: _cameraService.Transform);
-
-                const int tileSize = 128;
-                int tilesX = (GameConfig.MapWidth + tileSize - 1) / tileSize;
-                int tilesY = (GameConfig.MapHeight + tileSize - 1) / tileSize;
-
-                for (int y = 0; y < tilesY; y++)
-                {
-                    for (int x = 0; x < tilesX; x++)
-                    {
-                        var dest = new Rectangle(x * tileSize, y * tileSize, tileSize, tileSize);
-                        _spriteBatch.Draw(_floorTexture, dest, Color.White);
-                    }
-                }
-
-                _spriteBatch.End();
+                _backgroundRenderer.Draw(_spriteBatch, _cameraService.Transform);
             }
 
             _renderSystem.Draw(_cameraService.Transform);

@@ -1,20 +1,25 @@
 using CubeSurvivor.Components;
 using CubeSurvivor.Core;
+using CubeSurvivor.Core.Spatial;
 using Microsoft.Xna.Framework;
+using System;
 using System.Collections.Generic;
 
 namespace CubeSurvivor.Systems
 {
     /// <summary>
-    /// Sistema de detecção e resposta a colisões (usando Strategy Pattern)
+    /// Sistema de detecção e resposta a colisões (usando Strategy Pattern com Spatial Hashing).
+    /// Usa broad-phase (spatial index) + narrow-phase (regras específicas) para eficiência.
     /// </summary>
     public sealed class CollisionSystem : GameSystem
     {
+        private readonly ISpatialIndex _spatialIndex;
         private readonly List<ICollisionRule> _collisionRules;
         private readonly List<Entity> _bulletsToRemove;
 
-        public CollisionSystem()
+        public CollisionSystem(ISpatialIndex spatialIndex)
         {
+            _spatialIndex = spatialIndex ?? throw new ArgumentNullException(nameof(spatialIndex));
             _bulletsToRemove = new List<Entity>();
             _collisionRules = new List<ICollisionRule>
             {
@@ -30,26 +35,70 @@ namespace CubeSurvivor.Systems
             float deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
             _bulletsToRemove.Clear();
 
-            // Coletar todas as entidades com colliders
-            var entities = new List<Entity>(World.GetEntitiesWithComponent<ColliderComponent>());
+            // 1. Coletar todas as entidades com ColliderComponent
+            var colliderEntities = new List<Entity>(World.GetEntitiesWithComponent<ColliderComponent>());
 
-            // Verificar colisões entre todas as entidades
-            for (int i = 0; i < entities.Count; i++)
+            // 2. Construir lookup rápido: Entity -> index na lista
+            var indicesByEntity = new Dictionary<Entity, int>(colliderEntities.Count);
+            for (int i = 0; i < colliderEntities.Count; i++)
             {
-                for (int j = i + 1; j < entities.Count; j++)
+                indicesByEntity[colliderEntities[i]] = i;
+            }
+
+            // 3. Reconstruir spatial index (broad-phase)
+            _spatialIndex.Clear();
+
+            var boundsByEntity = new Dictionary<Entity, Rectangle>(colliderEntities.Count);
+
+            foreach (var entity in colliderEntities)
+            {
+                var collider = entity.GetComponent<ColliderComponent>();
+                var transform = entity.GetComponent<TransformComponent>();
+
+                if (collider == null || transform == null || !collider.Enabled)
+                    continue;
+
+                var bounds = collider.GetBounds(transform.Position);
+                boundsByEntity[entity] = bounds;
+                _spatialIndex.Register(entity, bounds);
+            }
+
+            // 4. Broad-phase: para cada entidade, consultar apenas entidades próximas
+            for (int i = 0; i < colliderEntities.Count; i++)
+            {
+                var entityA = colliderEntities[i];
+
+                if (!boundsByEntity.TryGetValue(entityA, out var boundsA))
+                    continue;
+
+                foreach (var entityB in _spatialIndex.Query(boundsA))
                 {
-                    CheckCollision(entities[i], entities[j], deltaTime);
+                    // Evitar auto-colisão e pares duplicados
+                    if (ReferenceEquals(entityA, entityB))
+                        continue;
+
+                    if (!indicesByEntity.TryGetValue(entityB, out var indexB))
+                        continue;
+
+                    if (indexB <= i)
+                        continue;
+
+                    // Narrow-phase: verificar colisão real e aplicar regras
+                    HandleCollisionPair(entityA, entityB, deltaTime);
                 }
             }
 
-            // Remover projéteis que colidiram
+            // 5. Remover projéteis marcados para remoção
             foreach (var bullet in _bulletsToRemove)
             {
                 World.RemoveEntity(bullet);
             }
         }
 
-        private void CheckCollision(Entity entityA, Entity entityB, float deltaTime)
+        /// <summary>
+        /// Verifica e trata uma possível colisão entre duas entidades (narrow-phase).
+        /// </summary>
+        private void HandleCollisionPair(Entity entityA, Entity entityB, float deltaTime)
         {
             var colliderA = entityA.GetComponent<ColliderComponent>();
             var colliderB = entityB.GetComponent<ColliderComponent>();
@@ -66,13 +115,16 @@ namespace CubeSurvivor.Systems
             var boundsA = colliderA.GetBounds(transformA.Position);
             var boundsB = colliderB.GetBounds(transformB.Position);
 
-            // Verificar interseção
+            // Verificar interseção exata
             if (boundsA.Intersects(boundsB))
             {
                 ApplyCollisionRules(entityA, entityB, deltaTime);
             }
         }
 
+        /// <summary>
+        /// Aplica todas as regras de colisão que correspondem ao par de entidades.
+        /// </summary>
         private void ApplyCollisionRules(Entity entityA, Entity entityB, float deltaTime)
         {
             foreach (var rule in _collisionRules)
