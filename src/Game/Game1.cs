@@ -101,6 +101,7 @@ namespace CubeSurvivor
                     _textureManager.LoadTexture("apple", "apple.png");
                     _textureManager.LoadTexture("brain", "brain.png");
                     _textureManager.LoadTexture("gun", "gun.png");
+                    _textureManager.LoadTexture("gun", "gun.png");
                 }
                 catch (Exception ex)
                 {
