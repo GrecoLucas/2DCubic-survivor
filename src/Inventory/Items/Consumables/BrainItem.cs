@@ -36,6 +36,8 @@ namespace CubeSurvivor.Inventory.Items.Consumables
                 original.MaxStackSize,
                 original.IconColor)
         {
+            // Copiar textura do original
+            IconTexture = original.IconTexture;
         }
         
         public override bool OnConsumptionComplete(CubeSurvivor.Core.Entity consumer)
@@ -52,7 +54,8 @@ namespace CubeSurvivor.Inventory.Items.Consumables
         
         public override IItem Clone()
         {
-            return new BrainItem(this);
+            var cloned = new BrainItem(this);
+            return cloned;
         }
     }
 }

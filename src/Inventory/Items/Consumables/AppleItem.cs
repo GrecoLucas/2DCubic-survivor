@@ -36,11 +36,14 @@ namespace CubeSurvivor.Inventory.Items.Consumables
                 original.MaxStackSize,
                 original.IconColor)
         {
+            // Copiar textura do original
+            IconTexture = original.IconTexture;
         }
         
         public override IItem Clone()
         {
-            return new AppleItem(this);
+            var cloned = new AppleItem(this);
+            return cloned;
         }
     }
 }
