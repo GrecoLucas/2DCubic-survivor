@@ -131,7 +131,15 @@ namespace CubeSurvivor
                 _renderSystem.Initialize(_world);
                 _renderSystem.CreatePixelTexture(GraphicsDevice);
 
-                _uiSystem = new UISystem(_spriteBatch, _font, _pixelTexture);
+                // Criar MainMenu e subescrever o comportamento para iniciar o jogo quando Play for clicado
+                var mainMenu = new MainMenu();
+                mainMenu.OnPlayRequested += () =>
+                {
+                    Console.WriteLine("[MainMenu] Play solicitado, iniciando jogo...");
+                    InitializeGame();
+                };
+
+                _uiSystem = new UISystem(_spriteBatch, _font, _pixelTexture, mainMenu);
                 _uiSystem.Initialize(_world);
 
                 _gameStateSystem = new GameStateSystem();
@@ -173,8 +181,6 @@ namespace CubeSurvivor
                 _world.AddSystem(new EnemySpawnSystem(spawnArea, _enemyFactory, GameConfig.EnemySpawnInterval, GameConfig.MaxEnemies));
                 _world.AddSystem(new AppleSpawnSystem(spawnArea, _textureManager));
 
-                Console.WriteLine("[Game1] Criando jogador...");
-                InitializeGame();
                 
                 Console.WriteLine("[Game1] LoadContent() concluído com sucesso!");
             }
