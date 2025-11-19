@@ -21,12 +21,21 @@ namespace CubeSurvivor.Systems
         {
             if (player == null || pixelTexture == null) return false;
 
+            // Obter componente de XP para verificar pontos disponíveis
+            var xp = player.GetComponent<XpComponent>();
+            if (xp == null || xp.AvailableUpgradePoints <= 0)
+            {
+                // Se não há pontos, fechar o menu
+                player.RemoveComponent<UpgradeRequestComponent>();
+                return false;
+            }
+
             // 1. Cores e layout
             var overlayColor = new Color(0, 0, 0, 180);
             var panelColor = new Color(40, 44, 52);
             var borderColor = Color.White * 0.2f;
 
-            int boxW = 500, boxH = 260;
+            int boxW = 500, boxH = 340;
             int centerX = GameConfig.ScreenWidth / 2;
             int centerY = GameConfig.ScreenHeight / 2;
             Rectangle box = new Rectangle(centerX - boxW / 2, centerY - boxH / 2, boxW, boxH);
@@ -39,13 +48,19 @@ namespace CubeSurvivor.Systems
             spriteBatch.Draw(pixelTexture, new Rectangle(box.X, box.Y, 2, boxH), borderColor);
             spriteBatch.Draw(pixelTexture, new Rectangle(box.X + boxW - 2, box.Y, 2, boxH), borderColor);
 
-            // 3. Título
+            // 3. Título com contador de pontos
             if (font != null)
             {
                 string title = "CHOOSE AN UPGRADE";
                 Vector2 titleSize = font.MeasureString(title);
-                Vector2 titlePos = new Vector2(centerX - titleSize.X / 2, box.Y + 20);
+                Vector2 titlePos = new Vector2(centerX - titleSize.X / 2, box.Y + 15);
                 spriteBatch.DrawString(font, title, titlePos, Color.Gold);
+                
+                // Mostrar pontos disponíveis
+                string pointsText = $"Pontos disponíveis: {xp.AvailableUpgradePoints}";
+                Vector2 pointsSize = font.MeasureString(pointsText);
+                Vector2 pointsPos = new Vector2(centerX - pointsSize.X / 2, box.Y + 45);
+                spriteBatch.DrawString(font, pointsText, pointsPos, Color.White);
             }
 
             // 4. Lógica dos upgrades (SRP: responsabilidade aqui é só aplicar upgrades)
@@ -67,9 +82,10 @@ namespace CubeSurvivor.Systems
             bool mouseClicked = mouse.LeftButton == ButtonState.Pressed && previousMouseState.LeftButton == ButtonState.Released;
 
             int btnW = 400, btnH = 50;
-            int startY = box.Y + 70;
+            int startY = box.Y + 80;
             int gap = 10;
 
+            // Desenhar botões de upgrade
             for (int i = 0; i < upgrades.Length; i++)
             {
                 Rectangle btnRect = new Rectangle(centerX - btnW / 2, startY + (btnH + gap) * i, btnW, btnH);
@@ -78,17 +94,42 @@ namespace CubeSurvivor.Systems
                 if (isHovered && mouseClicked)
                 {
                     upgrades[i].Action.Invoke();
-                    System.Console.WriteLine($"[Upgrade] Aplicado: {upgrades[i].Name}");
+                    xp.AvailableUpgradePoints--;
+                    System.Console.WriteLine($"[Upgrade] Aplicado: {upgrades[i].Name} (Pontos restantes: {xp.AvailableUpgradePoints})");
 
-                    // Remover componente de pedido de upgrade (fecha menu)
-                    player.RemoveComponent<UpgradeRequestComponent>();
+                    // Se ainda há pontos, manter menu aberto; senão fechar
+                    if (xp.AvailableUpgradePoints <= 0)
+                    {
+                        player.RemoveComponent<UpgradeRequestComponent>();
+                        xp.HasPendingLevelUp = false;
+                        previousMouseState = mouse;
+                        return false; // menu fechado
+                    }
+                    
                     // Atualizar previousMouse aqui para evitar double-clicks
                     previousMouseState = mouse;
-                    return false; // menu fechado
+                    return true; // menu continua aberto
                 }
 
                 DrawButton(spriteBatch, pixelTexture, font, btnRect, upgrades[i].Name, isHovered);
             }
+            
+            // Botão "Fechar Menu" no final
+            int closeY = startY + (btnH + gap) * upgrades.Length + 10;
+            Rectangle closeBtnRect = new Rectangle(centerX - btnW / 2, closeY, btnW, btnH);
+            bool closeHovered = closeBtnRect.Contains(mouse.X, mouse.Y);
+            
+            if (closeHovered && mouseClicked)
+            {
+                player.RemoveComponent<UpgradeRequestComponent>();
+                // Manter flag HasPendingLevelUp true se ainda houver pontos
+                xp.HasPendingLevelUp = xp.AvailableUpgradePoints > 0;
+                System.Console.WriteLine($"[Upgrade] Menu fechado (Pontos não gastos: {xp.AvailableUpgradePoints})");
+                previousMouseState = mouse;
+                return false; // menu fechado
+            }
+            
+            DrawButton(spriteBatch, pixelTexture, font, closeBtnRect, "Fechar Menu", closeHovered, Color.Gray, Color.DarkGray);
 
             // Atualizar estado do mouse para a próxima chamada
             previousMouseState = mouse;
@@ -96,9 +137,9 @@ namespace CubeSurvivor.Systems
         }
 
         // Helper local para desenhar botões (pode ser extraído para utilitária se desejar)
-        private void DrawButton(SpriteBatch spriteBatch, Texture2D pixelTexture, SpriteFont font, Rectangle rect, string text, bool isHovered)
+        private void DrawButton(SpriteBatch spriteBatch, Texture2D pixelTexture, SpriteFont font, Rectangle rect, string text, bool isHovered, Color? normalColor = null, Color? hoverColor = null)
         {
-            Color bgColor = isHovered ? Color.CornflowerBlue : Color.DimGray;
+            Color bgColor = isHovered ? (hoverColor ?? Color.CornflowerBlue) : (normalColor ?? Color.DimGray);
             Color textColor = isHovered ? Color.White : Color.LightGray;
 
             spriteBatch.Draw(pixelTexture, rect, bgColor);

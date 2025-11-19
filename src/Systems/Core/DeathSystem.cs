@@ -64,11 +64,8 @@ namespace CubeSurvivor.Systems
                                 bool leveled = xp.AddXp(xpPerEnemy);
                                 if (leveled)
                                 {
-                                    // Marcar que o jogador deve escolher um upgrade (se ainda não marcado)
-                                    if (!player.HasComponent<UpgradeRequestComponent>())
-                                    {
-                                        player.AddComponent(new UpgradeRequestComponent());
-                                    }
+                                    // Apenas marcar que há um nível pendente, sem abrir o menu automaticamente
+                                    xp.HasPendingLevelUp = true;
                                 }
                             }
                         }

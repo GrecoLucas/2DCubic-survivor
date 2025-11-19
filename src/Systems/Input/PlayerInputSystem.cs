@@ -19,6 +19,7 @@ namespace CubeSurvivor.Systems
 
         private readonly IBulletFactory _bulletFactory;
         private MouseState _previousMouseState;
+        private KeyboardState _previousKeyboardState;
         private Matrix? _cameraTransform;
 
         public PlayerInputSystem(IBulletFactory bulletFactory)
@@ -50,9 +51,24 @@ namespace CubeSurvivor.Systems
                 var input = entity.GetComponent<PlayerInputComponent>();
                 var velocity = entity.GetComponent<VelocityComponent>();
                 var transform = entity.GetComponent<TransformComponent>();
+                var xp = entity.GetComponent<XpComponent>();
 
                 if (input == null || velocity == null || transform == null || !input.Enabled)
                     continue;
+
+                // Detectar tecla P para abrir menu de upgrade se houver nível pendente
+                if (xp != null && xp.HasPendingLevelUp && 
+                    keyboardState.IsKeyDown(Keys.P) && 
+                    _previousKeyboardState.IsKeyUp(Keys.P))
+                {
+                    // Verificar se já não tem um upgrade request ativo
+                    if (!entity.HasComponent<UpgradeRequestComponent>())
+                    {
+                        entity.AddComponent(new UpgradeRequestComponent());
+                        xp.HasPendingLevelUp = false; // Consumir o flag
+                        System.Console.WriteLine("[PlayerInput] Menu de upgrade aberto (tecla P)");
+                    }
+                }
 
                 // Calcular direção baseada em WASD
                 var direction = Vector2.Zero;
@@ -143,6 +159,7 @@ namespace CubeSurvivor.Systems
             }
 
             _previousMouseState = mouseState;
+            _previousKeyboardState = keyboardState;
         }
 
         private Vector2 ScreenToWorld(Vector2 screenPos)

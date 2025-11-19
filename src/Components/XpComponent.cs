@@ -10,12 +10,24 @@ namespace CubeSurvivor.Components
         public float CurrentXp { get; private set; }
         public float RequiredXp { get; private set; }
         public float BaseRequiredXp { get; private set; }
+        
+        /// <summary>
+        /// Indica se há um nível pendente que o jogador ainda não aplicou
+        /// </summary>
+        public bool HasPendingLevelUp { get; set; }
+        
+        /// <summary>
+        /// Contador de pontos de upgrade disponíveis para gastar
+        /// </summary>
+        public int AvailableUpgradePoints { get; set; }
 
         public XpComponent(float baseRequiredXp = 100f)
         {
             BaseRequiredXp = baseRequiredXp;
             RequiredXp = baseRequiredXp;
             CurrentXp = 0f;
+            HasPendingLevelUp = false;
+            AvailableUpgradePoints = 0;
         }
 
         /// <summary>
@@ -30,6 +42,7 @@ namespace CubeSurvivor.Components
             {
                 CurrentXp -= RequiredXp;
                 RequiredXp *= 1.25f; // aumenta 25% a cada ciclo
+                AvailableUpgradePoints++; // adiciona 1 ponto de upgrade por nível
                 progressed = true;
             }
             return progressed;

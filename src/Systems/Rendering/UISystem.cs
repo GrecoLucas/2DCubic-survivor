@@ -133,6 +133,19 @@ namespace CubeSurvivor.Systems
                     string xpText = $"XP: {(int)xp.CurrentXp}/{(int)xp.RequiredXp}";
                     Vector2 xpTextPos = new Vector2(GameConfig.ScreenWidth - 215, GameConfig.ScreenHeight - 35);
                     _spriteBatch.DrawString(_font, xpText, xpTextPos, Color.White);
+                    
+                    // Mostrar mensagem de nível pendente acima da barra de XP
+                    if (xp.HasPendingLevelUp && xp.AvailableUpgradePoints > 0)
+                    {
+                        string levelUpText = $"Pontos: {xp.AvailableUpgradePoints} - Aperte P";
+                        Vector2 levelUpTextSize = _font.MeasureString(levelUpText);
+                        // Centralizar o texto acima da barra de XP com margem adequada
+                        Vector2 levelUpTextPos = new Vector2(
+                            GameConfig.ScreenWidth - 220 + (200 - levelUpTextSize.X) / 2, 
+                            GameConfig.ScreenHeight - 70
+                        );
+                        _spriteBatch.DrawString(_font, levelUpText, levelUpTextPos, Color.Yellow);
+                    }
                 }
             }
 
