@@ -41,6 +41,34 @@
       "maxHealth": 100
     }
   ],
-  "pickups": []
+  "pickups": [
+    {
+      "x": 2500,
+      "y": 1500,
+      "type": "hammer",
+      "amount": 1
+    },
+    {
+      "x": 1200,
+      "y": 900,
+      "type": "wood",
+      "amount": 5
+    },
+    {
+      "x": 1500,
+      "y": 1100,
+      "type": "wood",
+      "amount": 5
+    }
+  ],
+  "woodSpawnRegions": [
+    {
+      "x": 500,
+      "y": 500,
+      "width": 3000,
+      "height": 3000,
+      "maxActiveWood": 20
+    }
+  ]
 }
 

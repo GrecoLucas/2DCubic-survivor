@@ -34,6 +34,25 @@ namespace CubeSurvivor
     }
 
     /// <summary>
+    /// Define um pickup no mapa (wood, hammer, apple, etc.).
+    /// </summary>
+    public sealed class PickupDefinition
+    {
+        public Vector2 Position { get; set; }
+        public string Type { get; set; }
+        public float Amount { get; set; }
+    }
+
+    /// <summary>
+    /// Define uma região onde madeira pode spawnar periodicamente.
+    /// </summary>
+    public sealed class WoodSpawnRegionDefinition
+    {
+        public Rectangle Area { get; set; }
+        public int MaxActiveWood { get; set; }
+    }
+
+    /// <summary>
     /// Define um nível/mapa completo com todos os seus elementos.
     /// </summary>
     public sealed class LevelDefinition
@@ -57,6 +76,16 @@ namespace CubeSurvivor
         /// Lista de zonas seguras (casas, etc.) no mapa.
         /// </summary>
         public List<SafeZoneDefinition> SafeZones { get; } = new();
+
+        /// <summary>
+        /// Lista de pickups colocados no mapa no início do jogo.
+        /// </summary>
+        public List<PickupDefinition> Pickups { get; } = new();
+
+        /// <summary>
+        /// Lista de regiões onde recursos (madeira) podem spawnar periodicamente.
+        /// </summary>
+        public List<WoodSpawnRegionDefinition> WoodSpawnRegions { get; } = new();
     }
 }
 

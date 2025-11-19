@@ -79,6 +79,27 @@ namespace CubeSurvivor
     }
 
     /// <summary>
+    /// Modelo JSON para definição de região de spawn de madeira.
+    /// </summary>
+    public sealed class JsonWoodSpawnRegion
+    {
+        [JsonPropertyName("x")]
+        public int X { get; set; }
+
+        [JsonPropertyName("y")]
+        public int Y { get; set; }
+
+        [JsonPropertyName("width")]
+        public int Width { get; set; }
+
+        [JsonPropertyName("height")]
+        public int Height { get; set; }
+
+        [JsonPropertyName("maxActiveWood")]
+        public int MaxActiveWood { get; set; }
+    }
+
+    /// <summary>
     /// Modelo JSON raiz para definição completa de um mundo/nível.
     /// Este formato será eventualmente substituído/complementado por TMX (Tiled) maps.
     /// </summary>
@@ -98,6 +119,9 @@ namespace CubeSurvivor
 
         [JsonPropertyName("pickups")]
         public List<JsonPickupDefinition> Pickups { get; set; } = new();
+
+        [JsonPropertyName("woodSpawnRegions")]
+        public List<JsonWoodSpawnRegion> WoodSpawnRegions { get; set; } = new();
     }
 }
 

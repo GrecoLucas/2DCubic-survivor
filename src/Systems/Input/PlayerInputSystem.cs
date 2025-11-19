@@ -115,6 +115,31 @@ namespace CubeSurvivor.Systems
                         input.ShootCooldown = gun.ShootCooldown;
                     }
                 }
+
+                // Input de construção (Right-click quando tem hammer equipado)
+                bool buildClick = mouseState.RightButton == ButtonState.Pressed &&
+                                 _previousMouseState.RightButton == ButtonState.Released;
+
+                if (buildClick)
+                {
+                    var builder = entity.GetComponent<BuilderComponent>();
+                    var inventoryComp = entity.GetComponent<InventoryComponent>();
+                    
+                    if (builder != null && builder.Enabled && inventoryComp != null)
+                    {
+                        // Verificar se tem hammer no inventário
+                        var inventory = inventoryComp.Inventory;
+                        if (inventory != null && inventory.HasItem("hammer", 1))
+                        {
+                            builder.RequestedBuildPosition = mouseWorldPos;
+                            System.Console.WriteLine($"[PlayerInput] ✓ Build solicitado em ({mouseWorldPos.X:F0}, {mouseWorldPos.Y:F0})");
+                        }
+                        else
+                        {
+                            System.Console.WriteLine("[PlayerInput] ⚠ Precisa de Hammer no inventário para construir!");
+                        }
+                    }
+                }
             }
 
             _previousMouseState = mouseState;

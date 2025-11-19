@@ -40,6 +40,11 @@ namespace CubeSurvivor
         public const int DefaultHouseWidth = 400;
         public const int DefaultHouseHeight = 300;
 
+        // Configurações de construção e recursos
+        public const float PlayerBuildRange = 300f;
+        public const int WoodPerCrate = 4;
+        public const float WoodSpawnIntervalSeconds = 30f;
+
         // Taxa de aumento da dificuldade por minuto (ex: 0.1 = +10% por minuto)
         public const float EnemyDifficultyIncreasePerMinute = 0.90f;
 

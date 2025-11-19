@@ -115,7 +115,8 @@ namespace CubeSurvivor
                     _textureManager.LoadTexture("apple", "apple.png");
                     _textureManager.LoadTexture("brain", "brain.png");
                     _textureManager.LoadTexture("gun", "gun.png");
-                    _textureManager.LoadTexture("gun", "gun.png");
+                    _textureManager.LoadTexture("hammer", "hammer.png");
+                    _textureManager.LoadTexture("wood", "wood.png");
                 }
                 catch (Exception ex)
                 {
@@ -207,6 +208,9 @@ namespace CubeSurvivor
                 _world.AddSystem(new CollisionSystem(_spatialIndex));
                 _world.AddSystem(new DeathSystem(_textureManager));
                 _world.AddSystem(_gameStateSystem);
+                
+                // Sistema de construção
+                _world.AddSystem(new ConstructionSystem(_worldObjectFactory));
 
                 Rectangle spawnArea = new Rectangle(0, 0, GameConfig.MapWidth, GameConfig.MapHeight);
                 _world.AddSystem(new EnemySpawnSystem(spawnArea, _enemyFactory, GameConfig.EnemySpawnInterval, GameConfig.MaxEnemies, _safeZoneManager));
@@ -269,12 +273,46 @@ namespace CubeSurvivor
                         _worldObjectFactory.CreateCrate(_world, crateDef.Position, crateDef.IsDestructible, crateDef.MaxHealth);
                     }
                 }
+
+                // Criar pickups (wood, hammer, etc.) definidos no JSON
+                if (_levelDefinition.Pickups.Count > 0)
+                {
+                    Console.WriteLine($"[Game1] Criando {_levelDefinition.Pickups.Count} pickups...");
+                    SpawnPickups();
+                }
+
+                // Adicionar ResourceSpawnSystem depois de carregar o levelDefinition
+                _world.AddSystem(new ResourceSpawnSystem(_levelDefinition, _textureManager));
+                Console.WriteLine("[Game1] ResourceSpawnSystem adicionado");
             }
             
             // Criar jogador mais para cima/esquerda, próximo das safe zones
             Vector2 playerStartPosition = new Vector2(1000, 750);
             _playerFactory.CreatePlayer(_world, playerStartPosition);
             Console.WriteLine("[Game1] Jogador criado em " + playerStartPosition);
+        }
+
+        private void SpawnPickups()
+        {
+            var woodFactory = new WoodEntityFactory();
+            var hammerFactory = new HammerEntityFactory();
+            
+            woodFactory.SetTextureManager(_textureManager);
+            hammerFactory.SetTextureManager(_textureManager);
+
+            foreach (var pickup in _levelDefinition.Pickups)
+            {
+                var pickupType = pickup.Type.ToLowerInvariant();
+                
+                if (pickupType == "wood")
+                {
+                    woodFactory.CreateWood(_world, pickup.Position, (int)pickup.Amount);
+                }
+                else if (pickupType == "hammer")
+                {
+                    hammerFactory.CreateHammer(_world, pickup.Position);
+                }
+            }
         }
 
         private void RestartGame()

@@ -44,6 +44,9 @@ namespace CubeSurvivor.Entities
             player.AddComponent(new HealthComponent(100f)); // 100 de vida
             player.AddComponent(new ColliderComponent(50f, 50f, ColliderTag.Player));
             
+            // Componente de construção
+            player.AddComponent(new BuilderComponent(GameConfig.PlayerBuildRange));
+            
             // Componente de XP
             player.AddComponent(new XpComponent(20f));
             

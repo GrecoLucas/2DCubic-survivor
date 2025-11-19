@@ -76,9 +76,30 @@ namespace CubeSurvivor
 
                 Console.WriteLine($"[WorldLoader] - {jsonWorld.SafeZones.Count} zonas seguras carregadas");
 
-                // TODO: Converter pickups quando o sistema estiver pronto
-                // foreach (var pickup in jsonWorld.Pickups) { ... }
+                // Converter pickups
+                foreach (var pickup in jsonWorld.Pickups)
+                {
+                    level.Pickups.Add(new PickupDefinition
+                    {
+                        Position = new Vector2(pickup.X, pickup.Y),
+                        Type = pickup.Type,
+                        Amount = pickup.Amount
+                    });
+                }
 
+                Console.WriteLine($"[WorldLoader] - {jsonWorld.Pickups.Count} pickups carregados");
+
+                // Converter regiões de spawn de madeira
+                foreach (var region in jsonWorld.WoodSpawnRegions)
+                {
+                    level.WoodSpawnRegions.Add(new WoodSpawnRegionDefinition
+                    {
+                        Area = new Rectangle(region.X, region.Y, region.Width, region.Height),
+                        MaxActiveWood = region.MaxActiveWood
+                    });
+                }
+
+                Console.WriteLine($"[WorldLoader] - {jsonWorld.WoodSpawnRegions.Count} regiões de spawn de madeira carregadas");
                 Console.WriteLine("[WorldLoader] ✓ Mundo carregado com sucesso!");
 
                 // Armazenar dimensões do mapa (pode ser usado para atualizar GameConfig em runtime)
