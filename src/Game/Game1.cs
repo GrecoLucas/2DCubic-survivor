@@ -168,7 +168,7 @@ namespace CubeSurvivor
                     InitializeGame();
                 };
 
-                _uiSystem = new UISystem(_spriteBatch, _font, _pixelTexture, mainMenu);
+                _uiSystem = new UISystem(_spriteBatch, _font, _pixelTexture, mainMenu, _textureManager.GetTexture("brain"));
                 _uiSystem.Initialize(_world);
 
                 _gameStateSystem = new GameStateSystem();

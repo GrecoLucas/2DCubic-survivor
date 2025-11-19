@@ -115,19 +115,40 @@ namespace CubeSurvivor.Systems
                 if (hasGunEquipped && mouseState.LeftButton == ButtonState.Pressed && input.ShootCooldown <= 0)
                 {
                     var gun = heldItemComp.CurrentItem as GunItem;
-                    
-                    // Criar projétil na direção do mouse
-                    Vector2 bulletDirection = mouseWorldPos - transform.Position;
-                    if (bulletDirection != Vector2.Zero)
+
+                    // Criar projéteis (suporta múltiplas balas por tiro)
+                    Vector2 aim = mouseWorldPos - transform.Position;
+                    if (aim != Vector2.Zero)
                     {
-                        bulletDirection.Normalize();
-                        // Criar projétil ligeiramente à frente do player
-                        Vector2 bulletStartPos = transform.Position + bulletDirection * BulletSpawnOffset;
-                        // Usar propriedades da arma (permite diferentes armas com diferentes stats)
-                        float speed = gun.BulletSpeed;
-                        float damage = gun.Damage;
-                        float size = input.BulletSize;
-                        _bulletFactory.CreateBullet(World, bulletStartPos, bulletDirection, speed, damage, size);
+                        aim.Normalize();
+
+                        int bulletsToFire = 1 + input.ExtraBullets;
+                        float spreadDeg = 10f; // spread total em graus
+                        float spreadRad = MathHelper.ToRadians(spreadDeg);
+
+                        // Ângulo central
+                        float baseAngle = (float)System.Math.Atan2(aim.Y, aim.X);
+
+                        for (int i = 0; i < bulletsToFire; i++)
+                        {
+                            // distribuir os ângulos ao redor do centro
+                            float offset = 0f;
+                            if (bulletsToFire > 1)
+                            {
+                                float step = spreadRad / (bulletsToFire - 1);
+                                offset = -spreadRad / 2f + step * i;
+                            }
+
+                            float angle = baseAngle + offset;
+                            Vector2 dir = new Vector2((float)System.Math.Cos(angle), (float)System.Math.Sin(angle));
+                            Vector2 bulletStartPos = transform.Position + dir * BulletSpawnOffset;
+
+                            float speed = gun.BulletSpeed;
+                            float damage = gun.Damage;
+                            float size = input.BulletSize;
+                            _bulletFactory.CreateBullet(World, bulletStartPos, dir, speed, damage, size);
+                        }
+
                         input.ShootCooldown = gun.ShootCooldown;
                     }
                 }

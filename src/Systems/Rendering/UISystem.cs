@@ -39,6 +39,14 @@ namespace CubeSurvivor.Systems
             _mainMenu = mainMenu;
         }
 
+        // Sobrecarga que permite fornecer a textura do cérebro para o menu de upgrades
+        public UISystem(SpriteBatch spriteBatch, SpriteFont font, Texture2D pixelTexture, IMenu mainMenu, Texture2D brainTexture)
+            : this(spriteBatch, font, pixelTexture, mainMenu)
+        {
+            // Substituir o upgradeMenu padrão por um que conhece a textura do cérebro
+            _upgradeMenu = new UpgradeMenu(brainTexture);
+        }
+
         public override void Update(GameTime gameTime)
         {
             // Este sistema não processa na fase Update

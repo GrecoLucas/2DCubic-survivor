@@ -17,6 +17,8 @@ namespace CubeSurvivor.Components
         public float BulletSpeed { get; set; } = 600f;
         public float BulletDamage { get; set; } = 25f;
         public float BulletSize { get; set; } = 8f; // largura/altura do sprite do projétil
+        // Número de balas adicionais por disparo (0 = tiro simples)
+        public int ExtraBullets { get; set; } = 0;
 
         public PlayerInputComponent()
         {
