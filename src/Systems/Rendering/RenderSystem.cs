@@ -1,5 +1,6 @@
 using CubeSurvivor.Components;
 using CubeSurvivor.Core;
+using CubeSurvivor.Services;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -11,20 +12,12 @@ namespace CubeSurvivor.Systems
     public class RenderSystem : GameSystem
     {
         private readonly SpriteBatch _spriteBatch;
-        private Texture2D _pixelTexture;
+        private readonly ITextureService _textureService;
 
-        public RenderSystem(SpriteBatch spriteBatch)
+        public RenderSystem(SpriteBatch spriteBatch, ITextureService textureService)
         {
             _spriteBatch = spriteBatch;
-        }
-
-        /// <summary>
-        /// Cria uma textura 1x1 pixel para desenhar formas
-        /// </summary>
-        public void CreatePixelTexture(GraphicsDevice graphicsDevice)
-        {
-            _pixelTexture = new Texture2D(graphicsDevice, 1, 1);
-            _pixelTexture.SetData(new[] { Color.White });
+            _textureService = textureService;
         }
 
         public override void Update(GameTime gameTime)
@@ -37,7 +30,8 @@ namespace CubeSurvivor.Systems
         /// </summary>
         public void Draw(Matrix? cameraTransform = null)
         {
-            if (_pixelTexture == null)
+            var pixel = _textureService?.PixelTexture;
+            if (pixel == null)
                 return;
 
             var cameraTransformMatrix = cameraTransform ?? Matrix.Identity;
@@ -63,8 +57,11 @@ namespace CubeSurvivor.Systems
                 // Não aplicar rotação ao player (entidades com PlayerInputComponent)
                 float rotation = entity.HasComponent<PlayerInputComponent>() ? 0f : transform.Rotation;
 
+                // Usar textura se disponível, senão usar pixel texture
+                Texture2D textureToUse = sprite.Texture ?? pixel;
+                
                 _spriteBatch.Draw(
-                    _pixelTexture,
+                    textureToUse,
                     rectangle,
                     null,
                     sprite.Color,
@@ -104,7 +101,7 @@ namespace CubeSurvivor.Systems
                     // Desenhar arma rotacionada na direção oposta ao mouse
                     // Usar weaponCenter como posição (Vector2) e origem no centro para rotação correta
                     _spriteBatch.Draw(
-                        _pixelTexture,
+                        pixel,
                         weaponCenter, // Posição do centro da arma (Vector2)
                         weaponRect, // Retângulo de origem (tamanho)
                         weapon.Color,

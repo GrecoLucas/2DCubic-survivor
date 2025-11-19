@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework.Graphics;
 using System.Linq;
 using System;
 using System.IO;
+using CubeSurvivor.Services;
 
 namespace CubeSurvivor
 {
@@ -41,7 +42,9 @@ namespace CubeSurvivor
         private SpriteFont _font;
         private Texture2D _pixelTexture;
         private Texture2D _floorTexture;
-public Game1()
+        private Texture2D _brainTexture;
+        
+        public Game1()
         {
             Console.WriteLine("[Game1] Construtor iniciado");
             _graphics = new GraphicsDeviceManager(this);
@@ -125,6 +128,42 @@ public Game1()
                     _floorTexture = null;
                 }
 
+                Console.WriteLine("[Game1] Tentando carregar textura do cérebro...");
+                try
+                {
+                    string[] brainCandidates = new[]
+                    {
+                        Path.Combine("assets", "brain.png"),
+                        Path.Combine(Content.RootDirectory ?? "Content", "..", "assets", "brain.png"),
+                        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "brain.png"),
+                        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..\\..\\..\\assets\\brain.png")
+                    };
+
+                    foreach (var path in brainCandidates)
+                    {
+                        Console.WriteLine($"  Tentando: {path}");
+                        if (File.Exists(path))
+                        {
+                            Console.WriteLine($"  ✓ Arquivo encontrado!");
+                            using (var stream = File.OpenRead(path))
+                            {
+                                _brainTexture = Texture2D.FromStream(GraphicsDevice, stream);
+                            }
+                            break;
+                        }
+                    }
+                    
+                    if (_brainTexture == null)
+                    {
+                        Console.WriteLine("  ⚠ Textura do cérebro não encontrada");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"  ⚠ Erro ao carregar textura do cérebro: {ex.Message}");
+                    _brainTexture = null;
+                }
+
                 Console.WriteLine("[Game1] Carregando fonte DefaultFont...");
                 try
                 {
@@ -139,9 +178,19 @@ public Game1()
                 }
 
                 Console.WriteLine("[Game1] Configurando sistemas...");
-                _renderSystem = new RenderSystem(_spriteBatch);
+
+                // Serviço centralizado de texturas
+                var textureService = new TextureService();
+                textureService.CreatePixelTexture(GraphicsDevice);
+                // Registrar texturas carregadas (quando existirem)
+                if (_floorTexture != null) textureService.Register("floor", _floorTexture);
+                if (_brainTexture != null) textureService.Register("brain", _brainTexture);
+
+                // Atualizar pixelTexture usado por outras partes da UI
+                _pixelTexture = textureService.PixelTexture;
+
+                _renderSystem = new RenderSystem(_spriteBatch, textureService);
                 _renderSystem.Initialize(_world);
-                _renderSystem.CreatePixelTexture(GraphicsDevice);
 
                 _uiSystem = new UISystem(_spriteBatch, _font, _pixelTexture);
                 _uiSystem.Initialize(_world);
@@ -179,7 +228,7 @@ public Game1()
                 _world.AddSystem(new MovementSystem());
                 _world.AddSystem(new BulletSystem());
                 _world.AddSystem(new CollisionSystem());
-                _world.AddSystem(new DeathSystem());
+                _world.AddSystem(new DeathSystem(textureService));
                 _world.AddSystem(_gameStateSystem);
 
                 Rectangle spawnArea = new Rectangle(0, 0, GameConfig.MapWidth, GameConfig.MapHeight);

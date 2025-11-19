@@ -90,13 +90,13 @@ namespace CubeSurvivor.Inventory.Systems
             
             if (scrollDelta > 0)
             {
-                // Scroll up - próximo slot
-                inventory.SelectNextHotbarSlot();
+                // Scroll up - próximo slotSelectPreviousHotbarSlot
+                inventory.SelectPreviousHotbarSlot();
             }
             else if (scrollDelta < 0)
             {
                 // Scroll down - slot anterior
-                inventory.SelectPreviousHotbarSlot();
+                inventory.SelectNextHotbarSlot();
             }
         }
         

@@ -2,6 +2,7 @@ using CubeSurvivor.Components;
 using CubeSurvivor.Core;
 using CubeSurvivor.Entities;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,11 +16,13 @@ namespace CubeSurvivor.Systems
     {
         private readonly Random _random;
         private readonly BrainEntityFactory _brainFactory;
-        
-        public DeathSystem()
+        private readonly CubeSurvivor.Services.ITextureService _textureService;
+
+        public DeathSystem(CubeSurvivor.Services.ITextureService textureService)
         {
             _random = new Random();
-            _brainFactory = new BrainEntityFactory();
+            _textureService = textureService;
+            _brainFactory = new BrainEntityFactory(_textureService);
         }
         
         public override void Update(GameTime gameTime)
