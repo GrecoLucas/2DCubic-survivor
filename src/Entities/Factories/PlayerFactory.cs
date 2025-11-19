@@ -28,14 +28,15 @@ namespace CubeSurvivor.Entities
             player.AddComponent(new TransformComponent(position));
             
             // Usar textura se disponível, senão usar cor
+            // Jogador usa a camada Entities (padrão)
             Texture2D playerTexture = _textureManager?.GetTexture("player");
             if (playerTexture != null)
             {
-                player.AddComponent(new SpriteComponent(playerTexture, 50f, 50f));
+                player.AddComponent(new SpriteComponent(playerTexture, 50f, 50f, null, RenderLayer.Entities));
             }
             else
             {
-                player.AddComponent(new SpriteComponent(Color.Blue, 50f, 50f)); // Fallback: quadrado azul
+                player.AddComponent(new SpriteComponent(Color.Blue, 50f, 50f, RenderLayer.Entities));
             }
             player.AddComponent(new VelocityComponent(200f)); // Velocidade de 200 pixels/segundo
             // Player input with initial projectile properties

@@ -18,32 +18,39 @@ namespace CubeSurvivor.Components
         /// Padrão: Color.White (sem tint).
         /// </summary>
         public Color TintColor { get; set; } = Color.White;
+        
+        /// <summary>
+        /// Camada de renderização para controlar ordem de desenho.
+        /// </summary>
+        public RenderLayer Layer { get; set; } = RenderLayer.Entities;
 
-        public SpriteComponent(Color color, Vector2 size)
+        public SpriteComponent(Color color, Vector2 size, RenderLayer layer = RenderLayer.Entities)
         {
             Color = color;
             Size = size;
             Texture = null;
+            Layer = layer;
         }
 
-        public SpriteComponent(Color color, float width, float height) 
-            : this(color, new Vector2(width, height))
+        public SpriteComponent(Color color, float width, float height, RenderLayer layer = RenderLayer.Entities) 
+            : this(color, new Vector2(width, height), layer)
         {
         }
         
         /// <summary>
         /// Construtor para usar textura em vez de cor sólida.
         /// </summary>
-        public SpriteComponent(Texture2D texture, Vector2 size, Color? tintColor = null)
+        public SpriteComponent(Texture2D texture, Vector2 size, Color? tintColor = null, RenderLayer layer = RenderLayer.Entities)
         {
             Texture = texture;
             Size = size;
             Color = Color.White; // Fallback se textura não carregar
             TintColor = tintColor ?? Color.White;
+            Layer = layer;
         }
         
-        public SpriteComponent(Texture2D texture, float width, float height, Color? tintColor = null)
-            : this(texture, new Vector2(width, height), tintColor)
+        public SpriteComponent(Texture2D texture, float width, float height, Color? tintColor = null, RenderLayer layer = RenderLayer.Entities)
+            : this(texture, new Vector2(width, height), tintColor, layer)
         {
         }
     }

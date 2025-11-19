@@ -26,14 +26,15 @@ namespace CubeSurvivor.Entities
             brain.AddComponent(new TransformComponent(position));
             
             // Usar textura se disponível, senão usar cor
+            // Itens no chão usam a camada GroundItems para renderizar abaixo de entidades
             Texture2D brainTexture = _textureManager?.GetTexture("brain");
             if (brainTexture != null)
             {
-                brain.AddComponent(new SpriteComponent(brainTexture, 25f, 25f));
+                brain.AddComponent(new SpriteComponent(brainTexture, 25f, 25f, null, RenderLayer.GroundItems));
             }
             else
             {
-                brain.AddComponent(new SpriteComponent(new Color(210, 180, 140), 25f, 25f)); // Fallback: bege/tan
+                brain.AddComponent(new SpriteComponent(new Color(210, 180, 140), 25f, 25f, RenderLayer.GroundItems));
             }
             
             // Componente de pickup

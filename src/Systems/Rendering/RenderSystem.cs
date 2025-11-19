@@ -2,6 +2,7 @@ using CubeSurvivor.Components;
 using CubeSurvivor.Core;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System.Linq;
 
 namespace CubeSurvivor.Systems
 {
@@ -33,7 +34,11 @@ namespace CubeSurvivor.Systems
             var cameraTransformMatrix = cameraTransform ?? Matrix.Identity;
             _spriteBatch.Begin(transformMatrix: cameraTransformMatrix);
 
-            foreach (var entity in World.GetEntitiesWithComponent<SpriteComponent>())
+            // Ordenar entidades por camada de renderização para controlar z-order
+            var sortedEntities = World.GetEntitiesWithComponent<SpriteComponent>()
+                .OrderBy(e => e.GetComponent<SpriteComponent>()?.Layer ?? RenderLayer.Entities);
+
+            foreach (var entity in sortedEntities)
             {
                 var sprite = entity.GetComponent<SpriteComponent>();
                 var transform = entity.GetComponent<TransformComponent>();

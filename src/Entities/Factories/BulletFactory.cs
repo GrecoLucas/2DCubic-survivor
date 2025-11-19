@@ -19,7 +19,8 @@ namespace CubeSurvivor.Entities
 
             // Adicionar componentes
             bullet.AddComponent(new TransformComponent(position));
-            bullet.AddComponent(new SpriteComponent(Color.Yellow, size, size));
+            // Projéteis usam a camada Projectiles
+            bullet.AddComponent(new SpriteComponent(Color.Yellow, size, size, RenderLayer.Projectiles));
             bullet.AddComponent(new VelocityComponent(speed));
             bullet.GetComponent<VelocityComponent>().Velocity = direction * speed;
             bullet.AddComponent(new BulletComponent(damage, 5f)); // 5 segundos de vida máxima

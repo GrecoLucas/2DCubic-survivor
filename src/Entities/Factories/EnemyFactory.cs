@@ -15,7 +15,8 @@ namespace CubeSurvivor.Entities
 
             // Adicionar componentes
             enemy.AddComponent(new TransformComponent(position));
-            enemy.AddComponent(new SpriteComponent(Color.Red, 40f, 40f)); // Quadrado vermelho 40x40
+            // Inimigos usam a camada Entities
+            enemy.AddComponent(new SpriteComponent(Color.Red, 40f, 40f, RenderLayer.Entities)); // Quadrado vermelho 40x40
             enemy.AddComponent(new VelocityComponent(150f));
             enemy.AddComponent(new AIComponent(150f)); // Velocidade de perseguição
             enemy.AddComponent(new EnemyComponent(10f, 1f)); // 10 de dano, 1 segundo de cooldown
