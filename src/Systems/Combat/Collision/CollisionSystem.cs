@@ -18,6 +18,8 @@ namespace CubeSurvivor.Systems
             _bulletsToRemove = new List<Entity>();
             _collisionRules = new List<ICollisionRule>
             {
+                new ObstacleCollisionRule(), // Primeiro: prevenir atravessar paredes
+                new BulletObstacleCollisionRule(_bulletsToRemove), // Balas colidem com obstáculos
                 new BulletEnemyCollisionRule(_bulletsToRemove),
                 new PlayerEnemyCollisionRule()
             };

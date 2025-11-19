@@ -35,6 +35,11 @@ namespace CubeSurvivor
         public const float EnemyDamage = 10f;
         public const float EnemyAttackCooldown = 1f;
 
+        // Configurações de zonas seguras (casas, estruturas)
+        public const int WallBlockSize = 50;
+        public const int DefaultHouseWidth = 400;
+        public const int DefaultHouseHeight = 300;
+
         // Taxa de aumento da dificuldade por minuto (ex: 0.1 = +10% por minuto)
         public const float EnemyDifficultyIncreasePerMinute = 0.90f;
 

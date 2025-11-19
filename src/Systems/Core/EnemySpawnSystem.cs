@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using CubeSurvivor.Core;
 using CubeSurvivor.Entities;
@@ -12,6 +13,7 @@ namespace CubeSurvivor.Systems
     public sealed class EnemySpawnSystem : GameSystem
     {
         private readonly IEnemyFactory _enemyFactory;
+        private readonly IEnemySpawnExclusionProvider _exclusionProvider;
         private readonly Random _random = new Random();
         // Último multiplicador logado para evitar spam de logs
         private float _lastLoggedMultiplier = 0.01f;
@@ -23,12 +25,13 @@ namespace CubeSurvivor.Systems
         // Novo: tempo acumulado desde o início (segundos)
         private float _elapsedTime;
 
-        public EnemySpawnSystem(Rectangle spawnArea, IEnemyFactory enemyFactory, float spawnInterval = 2f, int maxEnemies = 50)
+        public EnemySpawnSystem(Rectangle spawnArea, IEnemyFactory enemyFactory, float spawnInterval = 2f, int maxEnemies = 50, IEnemySpawnExclusionProvider exclusionProvider = null)
         {
             _spawnArea = spawnArea;
             _enemyFactory = enemyFactory;
             _spawnInterval = spawnInterval;
             _maxEnemies = maxEnemies;
+            _exclusionProvider = exclusionProvider;
             _spawnTimer = 0f;
             _elapsedTime = 0f;
         }
@@ -96,7 +99,36 @@ namespace CubeSurvivor.Systems
 
         private Vector2 GetRandomSpawnPosition()
         {
-            // ...existing implementation...
+            const int maxAttempts = 20;
+            
+            for (int attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                Vector2 position = GetRandomEdgePosition();
+
+                // Se não há provider de exclusão, retornar posição diretamente
+                if (_exclusionProvider == null)
+                {
+                    return position;
+                }
+
+                // Verificar se a posição está dentro de alguma zona de exclusão
+                bool insideExclusion = _exclusionProvider
+                    .GetExclusionZones()
+                    .Any(rect => rect.Contains(position));
+
+                if (!insideExclusion)
+                {
+                    return position;
+                }
+            }
+
+            // Fallback: retornar uma posição sem verificação de exclusão
+            // (caso patológico onde todas as tentativas caíram em zonas de exclusão)
+            return GetRandomEdgePosition();
+        }
+
+        private Vector2 GetRandomEdgePosition()
+        {
             int side = _random.Next(4); // 0=top, 1=right, 2=bottom, 3=left
 
             float x, y;
