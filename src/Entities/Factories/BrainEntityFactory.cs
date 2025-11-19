@@ -3,7 +3,6 @@ using CubeSurvivor.Core;
 using CubeSurvivor.Inventory.Items.Consumables;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using CubeSurvivor.Services;
 
 namespace CubeSurvivor.Entities
 {
@@ -12,11 +11,11 @@ namespace CubeSurvivor.Entities
     /// </summary>
     public sealed class BrainEntityFactory
     {
-        private readonly ITextureService _textureService;
-
-        public BrainEntityFactory(ITextureService textureService = null)
+        private TextureManager _textureManager;
+        
+        public void SetTextureManager(TextureManager textureManager)
         {
-            _textureService = textureService;
+            _textureManager = textureManager;
         }
         
         public Entity CreateBrain(IGameWorld world, Vector2 position)
@@ -26,19 +25,24 @@ namespace CubeSurvivor.Entities
             // Transformação e visual
             brain.AddComponent(new TransformComponent(position));
             
-            // Usar textura se disponível no serviço, senão usar cor sólida (bege/tan)
-            var tex = _textureService?.Get("brain");
-            if (tex != null)
+            // Usar textura se disponível, senão usar cor
+            Texture2D brainTexture = _textureManager?.GetTexture("brain");
+            if (brainTexture != null)
             {
-                brain.AddComponent(new SpriteComponent(tex, 64f, 64f));
+                brain.AddComponent(new SpriteComponent(brainTexture, 25f, 25f));
             }
             else
             {
-                brain.AddComponent(new SpriteComponent(new Color(210, 180, 140), 25f, 25f));
+                brain.AddComponent(new SpriteComponent(new Color(210, 180, 140), 25f, 25f)); // Fallback: bege/tan
             }
             
             // Componente de pickup
             var brainItem = new BrainItem();
+            // Atribuir textura ao item também (para inventário)
+            if (_textureManager != null)
+            {
+                brainItem.IconTexture = _textureManager.GetTexture("brain");
+            }
             brain.AddComponent(new PickupComponent(brainItem, quantity: 1, pickupRadius: 50f));
             
             // Collider para detecção

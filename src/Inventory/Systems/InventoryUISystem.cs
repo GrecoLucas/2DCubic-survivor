@@ -171,16 +171,32 @@ namespace CubeSurvivor.Inventory.Systems
         
         private void DrawItemIcon(int x, int y, int size, IItemStack stack)
         {
-            // Desenhar ícone do item (cor representativa)
+            // Desenhar ícone do item (textura se disponível, senão cor representativa)
             int iconPadding = 8;
             int iconSize = size - (iconPadding * 2);
-            DrawRectangle(
-                x + iconPadding, 
-                y + iconPadding, 
-                iconSize, 
-                iconSize, 
-                stack.Item.IconColor
-            );
+            
+            if (stack.Item.IconTexture != null)
+            {
+                // Desenhar textura do item
+                Rectangle iconRect = new Rectangle(
+                    x + iconPadding,
+                    y + iconPadding,
+                    iconSize,
+                    iconSize
+                );
+                _spriteBatch.Draw(stack.Item.IconTexture, iconRect, Color.White);
+            }
+            else
+            {
+                // Fallback: desenhar cor representativa
+                DrawRectangle(
+                    x + iconPadding, 
+                    y + iconPadding, 
+                    iconSize, 
+                    iconSize, 
+                    stack.Item.IconColor
+                );
+            }
             
             // Desenhar quantidade se > 1
             if (stack.Quantity > 1 && _font != null)

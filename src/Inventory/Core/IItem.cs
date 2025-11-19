@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace CubeSurvivor.Inventory.Core
 {
@@ -14,6 +15,7 @@ namespace CubeSurvivor.Inventory.Core
         ItemType Type { get; }
         int MaxStackSize { get; }
         Color IconColor { get; }
+        Texture2D IconTexture { get; set; }
         
         /// <summary>
         /// Chamado quando o item é equipado/segurado.

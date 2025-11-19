@@ -20,10 +20,14 @@ namespace CubeSurvivor.Systems
         
         private float _timeSinceLastSpawn;
         
-        public AppleSpawnSystem(Rectangle spawnArea)
+        public AppleSpawnSystem(Rectangle spawnArea, TextureManager textureManager = null)
         {
             _spawnArea = spawnArea;
             _appleFactory = new AppleEntityFactory();
+            if (textureManager != null)
+            {
+                _appleFactory.SetTextureManager(textureManager);
+            }
             _random = new Random();
             _timeSinceLastSpawn = 0f;
         }

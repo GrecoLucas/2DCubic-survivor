@@ -7,19 +7,14 @@ using Microsoft.Xna.Framework.Graphics;
 using System.Linq;
 using System;
 using System.IO;
-using CubeSurvivor.Services;
 
 namespace CubeSurvivor
 {
-    /// <summary>
-    /// Classe principal do jogo
-    /// </summary>
     public class Game1 : Game
     {
         private readonly GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
         
-        // Sistema ECS
         private readonly GameWorld _world;
         private RenderSystem _renderSystem;
         private UISystem _uiSystem;
@@ -30,20 +25,18 @@ namespace CubeSurvivor
         private InventoryDragDropSystem _inventoryDragDropSystem;
         private ConsumptionUISystem _consumptionUISystem;
 
-        // Factories
         private readonly IPlayerFactory _playerFactory;
         private readonly IEnemyFactory _enemyFactory;
         private readonly IBulletFactory _bulletFactory;
 
-        // Serviço de câmera
         private readonly CameraService _cameraService;
 
-        // Font para UI (vamos criar uma simples)
         private SpriteFont _font;
         private Texture2D _pixelTexture;
         private Texture2D _floorTexture;
-        private Texture2D _brainTexture;
         
+        private TextureManager _textureManager;
+
         public Game1()
         {
             Console.WriteLine("[Game1] Construtor iniciado");
@@ -91,77 +84,32 @@ namespace CubeSurvivor
                 Console.WriteLine("[Game1] Criando textura de pixel...");
                 _pixelTexture = new Texture2D(GraphicsDevice, 1, 1);
                 _pixelTexture.SetData(new[] { Color.White });
+                
+                Console.WriteLine("[Game1] Inicializando TextureManager...");
+                _textureManager = new TextureManager(GraphicsDevice);
 
-                Console.WriteLine("[Game1] Tentando carregar textura do piso...");
+                Console.WriteLine("[Game1] Carregando texturas do jogo...");
                 try
                 {
-                    string[] candidates = new[]
-                    {
-                        Path.Combine("assets", "floor.png"),
-                        Path.Combine(Content.RootDirectory ?? "Content", "..", "assets", "floor.png"),
-                        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "floor.png"),
-                        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..\\..\\..\\assets\\floor.png")
-                    };
-
-                    foreach (var path in candidates)
-                    {
-                        Console.WriteLine($"  Tentando: {path}");
-                        if (File.Exists(path))
-                        {
-                            Console.WriteLine($"  ✓ Arquivo encontrado!");
-                            using (var stream = File.OpenRead(path))
-                            {
-                                _floorTexture = Texture2D.FromStream(GraphicsDevice, stream);
-                            }
-                            break;
-                        }
-                    }
-                    
+                    _floorTexture = _textureManager.LoadTexture("floor", "floor.png");
                     if (_floorTexture == null)
                     {
-                        Console.WriteLine("  ⚠ Nenhuma textura encontrada, usando cor sólida");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"  ⚠ Erro ao carregar textura: {ex.Message}");
-                    _floorTexture = null;
-                }
-
-                Console.WriteLine("[Game1] Tentando carregar textura do cérebro...");
-                try
-                {
-                    string[] brainCandidates = new[]
-                    {
-                        Path.Combine("assets", "brain.png"),
-                        Path.Combine(Content.RootDirectory ?? "Content", "..", "assets", "brain.png"),
-                        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "brain.png"),
-                        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..\\..\\..\\assets\\brain.png")
-                    };
-
-                    foreach (var path in brainCandidates)
-                    {
-                        Console.WriteLine($"  Tentando: {path}");
-                        if (File.Exists(path))
-                        {
-                            Console.WriteLine($"  ✓ Arquivo encontrado!");
-                            using (var stream = File.OpenRead(path))
-                            {
-                                _brainTexture = Texture2D.FromStream(GraphicsDevice, stream);
-                            }
-                            break;
-                        }
+                        Console.WriteLine("  Textura do piso não encontrada, usando cor sólida");
                     }
                     
-                    if (_brainTexture == null)
-                    {
-                        Console.WriteLine("  ⚠ Textura do cérebro não encontrada");
-                    }
+                    _textureManager.LoadTexture("player", "player.png");
+                    _textureManager.LoadTexture("apple", "apple.png");
+                    _textureManager.LoadTexture("brain", "brain.png");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"  ⚠ Erro ao carregar textura do cérebro: {ex.Message}");
-                    _brainTexture = null;
+                    Console.WriteLine("Erro ao carregar texturas: " + ex.Message);
+                }
+                
+                Console.WriteLine("[Game1] Configurando factories com texturas...");
+                if (_playerFactory is PlayerFactory playerFactory)
+                {
+                    playerFactory.SetTextureManager(_textureManager);
                 }
 
                 Console.WriteLine("[Game1] Carregando fonte DefaultFont...");
@@ -173,24 +121,14 @@ namespace CubeSurvivor
                 catch (Exception ex)
                 {
                     _font = null;
-                    Console.WriteLine($"[Game1] Não foi possível carregar DefaultFont: {ex.GetType().Name} - {ex.Message}");
+                    Console.WriteLine("[Game1] Não foi possível carregar DefaultFont");
                     Console.WriteLine("[Game1] Continuando sem fonte, a UI desenhará apenas barras visuais.");
                 }
 
                 Console.WriteLine("[Game1] Configurando sistemas...");
-
-                // Serviço centralizado de texturas
-                var textureService = new TextureService();
-                textureService.CreatePixelTexture(GraphicsDevice);
-                // Registrar texturas carregadas (quando existirem)
-                if (_floorTexture != null) textureService.Register("floor", _floorTexture);
-                if (_brainTexture != null) textureService.Register("brain", _brainTexture);
-
-                // Atualizar pixelTexture usado por outras partes da UI
-                _pixelTexture = textureService.PixelTexture;
-
-                _renderSystem = new RenderSystem(_spriteBatch, textureService);
+                _renderSystem = new RenderSystem(_spriteBatch);
                 _renderSystem.Initialize(_world);
+                _renderSystem.CreatePixelTexture(GraphicsDevice);
 
                 _uiSystem = new UISystem(_spriteBatch, _font, _pixelTexture);
                 _uiSystem.Initialize(_world);
@@ -202,7 +140,6 @@ namespace CubeSurvivor
                 _inputSystem = new PlayerInputSystem(_bulletFactory);
                 _inputSystem.SetScreenSize(GameConfig.ScreenWidth, GameConfig.ScreenHeight);
                 
-                // Sistemas de inventário
                 _inventoryInputSystem = new InventoryInputSystem();
                 _inventoryInputSystem.Initialize(_world);
                 
@@ -221,19 +158,19 @@ namespace CubeSurvivor
                 Console.WriteLine("[Game1] Adicionando sistemas ao mundo...");
                 _world.AddSystem(_inputSystem);
                 _world.AddSystem(_inventoryInputSystem);
-                _world.AddSystem(_inventoryDragDropSystem); // Sistema de drag-and-drop
-                _world.AddSystem(new PickupSystem()); // Sistema de coleta de itens
-                _world.AddSystem(new ConsumptionSystem()); // Sistema de consumo de itens
+                _world.AddSystem(_inventoryDragDropSystem);
+                _world.AddSystem(new PickupSystem());
+                _world.AddSystem(new ConsumptionSystem());
                 _world.AddSystem(new AISystem());
                 _world.AddSystem(new MovementSystem());
                 _world.AddSystem(new BulletSystem());
                 _world.AddSystem(new CollisionSystem());
-                _world.AddSystem(new DeathSystem(textureService));
+                _world.AddSystem(new DeathSystem(_textureManager));
                 _world.AddSystem(_gameStateSystem);
 
                 Rectangle spawnArea = new Rectangle(0, 0, GameConfig.MapWidth, GameConfig.MapHeight);
                 _world.AddSystem(new EnemySpawnSystem(spawnArea, _enemyFactory, GameConfig.EnemySpawnInterval, GameConfig.MaxEnemies));
-                _world.AddSystem(new AppleSpawnSystem(spawnArea)); // Sistema de spawn de maçãs
+                _world.AddSystem(new AppleSpawnSystem(spawnArea, _textureManager));
 
                 Console.WriteLine("[Game1] Criando jogador...");
                 InitializeGame();
@@ -242,8 +179,8 @@ namespace CubeSurvivor
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[Game1] ERRO em LoadContent: {ex.Message}");
-                Console.WriteLine($"Stack: {ex.StackTrace}");
+                Console.WriteLine("[Game1] ERRO em LoadContent: " + ex.Message);
+                Console.WriteLine("Stack: " + ex.StackTrace);
                 throw;
             }
         }
@@ -253,27 +190,22 @@ namespace CubeSurvivor
             Console.WriteLine("[Game1] InitializeGame() iniciado");
             Vector2 playerStartPosition = new Vector2(GameConfig.ScreenWidth / 2, GameConfig.ScreenHeight / 2);
             _playerFactory.CreatePlayer(_world, playerStartPosition);
-            Console.WriteLine($"[Game1] Jogador criado em {playerStartPosition}");
+            Console.WriteLine("[Game1] Jogador criado em " + playerStartPosition);
         }
 
         private void RestartGame()
         {
-            // Limpar todas as entidades
             var allEntities = _world.GetAllEntities().ToList();
             foreach (var entity in allEntities)
             {
                 _world.RemoveEntity(entity);
             }
 
-            // Recriar o jogador
             InitializeGame();
         }
 
-        
-
         protected override void Update(GameTime gameTime)
         {
-            // Verificar se o inventário está aberto (pausa o jogo)
             bool inventoryOpen = false;
             var player = _world.GetEntitiesWithComponent<Components.PlayerInputComponent>().FirstOrDefault();
             if (player != null)
@@ -285,18 +217,14 @@ namespace CubeSurvivor
                 }
             }
             
-            // Verificar se há upgrade pendente
             bool upgradePending = _world.GetEntitiesWithComponent<Components.UpgradeRequestComponent>().Any();
             
-            // Só atualizar o mundo se não estiver pausado (inventário fechado e sem upgrade pendente)
             if (!upgradePending && !inventoryOpen)
             {
-                // Atualizar todos os sistemas
                 _world.Update(gameTime);
             }
             else if (inventoryOpen)
             {
-                // Quando inventário aberto, apenas atualizar sistemas de inventário
                 _inventoryInputSystem?.Update(gameTime);
                 _inventoryDragDropSystem?.Update(gameTime);
             }
@@ -319,19 +247,17 @@ namespace CubeSurvivor
 
         protected override void Draw(GameTime gameTime)
         {
-            // Se não tivermos a textura do piso, mantenha o comportamento antigo
             if (_floorTexture == null)
             {
                 GraphicsDevice.Clear(Color.ForestGreen);
             }
             else
             {
-                // Limpar para preto antes de desenhar o piso em tiles
                 GraphicsDevice.Clear(Color.Black);
 
                 _spriteBatch.Begin(transformMatrix: _cameraService.Transform);
 
-                const int tileSize = 128; // a imagem é 64x64
+                const int tileSize = 128;
                 int tilesX = (GameConfig.MapWidth + tileSize - 1) / tileSize;
                 int tilesY = (GameConfig.MapHeight + tileSize - 1) / tileSize;
 
@@ -347,16 +273,12 @@ namespace CubeSurvivor
                 _spriteBatch.End();
             }
 
-            // Renderizar entidades usando a transformação da câmera
             _renderSystem.Draw(_cameraService.Transform);
 
-            // Renderizar UI
             _uiSystem.Draw();
             
-            // Renderizar inventário (hotbar sempre visível, full inventory quando aberto)
             _inventoryUISystem?.Draw();
             
-            // Renderizar UI de consumo (countdown timer)
             _consumptionUISystem?.Draw();
 
             base.Draw(gameTime);

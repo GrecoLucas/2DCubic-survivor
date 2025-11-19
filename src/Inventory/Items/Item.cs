@@ -1,5 +1,6 @@
 using CubeSurvivor.Inventory.Core;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace CubeSurvivor.Inventory.Items
 {
@@ -15,6 +16,7 @@ namespace CubeSurvivor.Inventory.Items
         public ItemType Type { get; protected set; }
         public int MaxStackSize { get; protected set; }
         public Color IconColor { get; protected set; }
+        public Texture2D IconTexture { get; set; }
         
         protected Item(string id, string name, string description, ItemType type, int maxStackSize = 1, Color? iconColor = null)
         {

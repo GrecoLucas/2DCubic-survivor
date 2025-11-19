@@ -16,13 +16,15 @@ namespace CubeSurvivor.Systems
     {
         private readonly Random _random;
         private readonly BrainEntityFactory _brainFactory;
-        private readonly CubeSurvivor.Services.ITextureService _textureService;
-
-        public DeathSystem(CubeSurvivor.Services.ITextureService textureService)
+        
+        public DeathSystem(TextureManager textureManager = null)
         {
             _random = new Random();
-            _textureService = textureService;
-            _brainFactory = new BrainEntityFactory(_textureService);
+            _brainFactory = new BrainEntityFactory();
+            if (textureManager != null)
+            {
+                _brainFactory.SetTextureManager(textureManager);
+            }
         }
         
         public override void Update(GameTime gameTime)
