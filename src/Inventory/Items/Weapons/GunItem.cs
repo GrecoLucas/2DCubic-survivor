@@ -39,6 +39,8 @@ namespace CubeSurvivor.Inventory.Items.Weapons
         {
             BulletSpeed = original.BulletSpeed;
             ShootCooldown = original.ShootCooldown;
+            // Copiar textura do original
+            IconTexture = original.IconTexture;
         }
         
         protected override void EquipVisuals(CubeSurvivor.Core.Entity holder)

@@ -54,6 +54,11 @@ namespace CubeSurvivor.Entities
             
             // Adicionar gun ao inventário (no primeiro slot da hotbar)
             var gun = new GunItem();
+            // Atribuir textura ao item (para inventário)
+            if (_textureManager != null)
+            {
+                gun.IconTexture = _textureManager.GetTexture("gun");
+            }
             inventory.AddItem(gun, 1);
             
             // Equipar automaticamente a gun ao criar o jogador
