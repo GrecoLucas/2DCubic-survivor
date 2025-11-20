@@ -14,6 +14,7 @@ namespace CubeSurvivor.Systems
     {
         private readonly IEnemyFactory _enemyFactory;
         private readonly IEnemySpawnExclusionProvider _exclusionProvider;
+        private readonly CubeSurvivor.Systems.World.BiomeSystem _biomeSystem;
         private readonly Random _random = new Random();
         // Último multiplicador logado para evitar spam de logs
         private float _lastLoggedMultiplier = 0.01f;
@@ -25,13 +26,14 @@ namespace CubeSurvivor.Systems
         // Novo: tempo acumulado desde o início (segundos)
         private float _elapsedTime;
 
-        public EnemySpawnSystem(Rectangle spawnArea, IEnemyFactory enemyFactory, float spawnInterval = 2f, int maxEnemies = 50, IEnemySpawnExclusionProvider exclusionProvider = null)
+        public EnemySpawnSystem(Rectangle spawnArea, IEnemyFactory enemyFactory, float spawnInterval = 2f, int maxEnemies = 50, IEnemySpawnExclusionProvider exclusionProvider = null, CubeSurvivor.Systems.World.BiomeSystem biomeSystem = null)
         {
             _spawnArea = spawnArea;
             _enemyFactory = enemyFactory;
             _spawnInterval = spawnInterval;
             _maxEnemies = maxEnemies;
             _exclusionProvider = exclusionProvider;
+            _biomeSystem = biomeSystem;
             _spawnTimer = 0f;
             _elapsedTime = 0f;
         }
@@ -64,6 +66,13 @@ namespace CubeSurvivor.Systems
         {
             // Gerar posição aleatória nas bordas do spawn area
             Vector2 position = GetRandomSpawnPosition();
+
+            // Se há um sistema de biomas configurado, garantir que o bioma nessa posição permite spawns
+            if (_biomeSystem != null && !_biomeSystem.AllowsEnemySpawnsAt(position))
+            {
+                // não spawnar aqui; somente tentar novamente no próximo ciclo
+                return;
+            }
 
             // Criar inimigo via factory (retorna a entidade criada)
             var enemy = _enemyFactory.CreateEnemy(World, position);

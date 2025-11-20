@@ -11,6 +11,9 @@ namespace CubeSurvivor
     public sealed class WorldBackgroundRenderer
     {
         private readonly Texture2D _floorTexture;
+        private Texture2D _leftTexture; // textura para metade esquerda
+        private Texture2D _rightTexture; // textura para metade direita
+        private System.Func<Microsoft.Xna.Framework.Vector2, Texture2D> _biomeTextureProvider;
         private int _mapWidth;
         private int _mapHeight;
         private readonly int _tileSize;
@@ -25,6 +28,19 @@ namespace CubeSurvivor
             _tileSize = tileSize;
             _screenWidth = screenWidth;
             _screenHeight = screenHeight;
+        }
+
+        // Define as texturas para as metades esquerda e direita do mapa
+        public void SetSplitTextures(Texture2D leftTexture, Texture2D rightTexture)
+        {
+            _leftTexture = leftTexture;
+            _rightTexture = rightTexture;
+        }
+
+        // Permite configurar um provider que retorna a textura do bioma para uma posição
+        public void SetBiomeTextureProvider(System.Func<Microsoft.Xna.Framework.Vector2, Texture2D> provider)
+        {
+            _biomeTextureProvider = provider;
         }
 
         /// <summary>
@@ -44,7 +60,8 @@ namespace CubeSurvivor
         /// <param name="cameraTransform">Transformação da câmera</param>
         public void Draw(SpriteBatch spriteBatch, Matrix cameraTransform)
         {
-            if (_floorTexture == null)
+            // Se houver texturas divididas, usar as metades conforme a posição X.
+            if (_floorTexture == null && _leftTexture == null && _rightTexture == null)
                 return;
 
             // Calcular o retângulo visível no mundo
@@ -79,8 +96,30 @@ namespace CubeSurvivor
                     if (worldX >= _mapWidth || worldY >= _mapHeight)
                         continue;
 
-                    var dest = new Rectangle(worldX, worldY, _tileSize, _tileSize);
-                    spriteBatch.Draw(_floorTexture, dest, Color.White);
+                    Texture2D tex = _floorTexture;
+
+                    // Se houver um provider de bioma, usar a textura retornada por ele
+                    if (_biomeTextureProvider != null)
+                    {
+                        // consultar pelo centro do tile
+                        var tileCenter = new Microsoft.Xna.Framework.Vector2(worldX + _tileSize / 2, worldY + _tileSize / 2);
+                        var providerTex = _biomeTextureProvider(tileCenter);
+                        tex = providerTex ?? _floorTexture;
+                    }
+                    else if (_leftTexture != null || _rightTexture != null)
+                    {
+                        // Se foi definida uma textura para cada metade, escolher por X
+                        if (worldX + _tileSize / 2 < _mapWidth / 2)
+                            tex = _leftTexture ?? _floorTexture;
+                        else
+                            tex = _rightTexture ?? _floorTexture;
+                    }
+
+                    if (tex != null)
+                    {
+                        var dest = new Rectangle(worldX, worldY, _tileSize, _tileSize);
+                        spriteBatch.Draw(tex, dest, Color.White);
+                    }
                 }
             }
 

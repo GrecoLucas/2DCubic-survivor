@@ -70,42 +70,11 @@ namespace CubeSurvivor.Systems
                 Vector2 pointsPos = new Vector2(centerX - pointsSize.X / 2, box.Y + 42);
                 spriteBatch.DrawString(font, pointsText, pointsPos, Color.White);
 
-                // Navegação de páginas (simples)
+                // Mostrar qual página está ativa
                 string pageText = $"Página {_page}/2";
                 Vector2 pageSize = font.MeasureString(pageText);
                 Vector2 pagePos = new Vector2(box.X + boxW - pageSize.X - 12, box.Y + 12);
                 spriteBatch.DrawString(font, pageText, pagePos, Color.LightGray);
-
-                // Desenhar botões de página (<< e >>)
-                string prevText = "<";
-                string nextText = ">";
-                Vector2 prevSize = font.MeasureString(prevText);
-                Vector2 nextSize = font.MeasureString(nextText);
-                Rectangle prevRect = new Rectangle(box.X + boxW - (int)pageSize.X - 12 - (int)prevSize.X - 14, box.Y + 10, (int)prevSize.X + 8, (int)prevSize.Y + 6);
-                Rectangle nextRect = new Rectangle(box.X + boxW - 36, box.Y + 10, (int)nextSize.X + 8, (int)nextSize.Y + 6);
-                bool prevHovered = prevRect.Contains(Mouse.GetState().X, Mouse.GetState().Y);
-                bool nextHovered = nextRect.Contains(Mouse.GetState().X, Mouse.GetState().Y);
-                // fundo discreto
-                spriteBatch.Draw(pixelTexture, prevRect, prevHovered ? Color.DarkGray : Color.DimGray);
-                spriteBatch.Draw(pixelTexture, nextRect, nextHovered ? Color.DarkGray : Color.DimGray);
-                if (font != null)
-                {
-                    spriteBatch.DrawString(font, prevText, new Vector2(prevRect.X + 4, prevRect.Y + 2), Color.White);
-                    spriteBatch.DrawString(font, nextText, new Vector2(nextRect.X + 4, nextRect.Y + 2), Color.White);
-                }
-
-                // Processar clique simples nos botões de página
-                if (Mouse.GetState().LeftButton == ButtonState.Pressed && previousMouseState.LeftButton == ButtonState.Released)
-                {
-                    if (prevHovered)
-                    {
-                        _page = Math.Max(1, _page - 1);
-                    }
-                    else if (nextHovered)
-                    {
-                        _page = Math.Min(2, _page + 1);
-                    }
-                }
             }
 
             // 4. Lógica dos upgrades (SRP: responsabilidade aqui é só aplicar upgrades)
@@ -252,11 +221,38 @@ namespace CubeSurvivor.Systems
                 DrawButton(spriteBatch, pixelTexture, font, btnRect, label, isHovered);
             }
             
-            // Botão "Fechar Menu" no final
+            // Botão "Fechar Menu" no final e setas de paginação ao redor
             int closeY = startY + (btnH + gap) * currentUpgrades.Length + 10;
             Rectangle closeBtnRect = new Rectangle(centerX - btnW / 2, closeY, btnW, btnH);
             bool closeHovered = closeBtnRect.Contains(mouse.X, mouse.Y);
-            
+
+            // Desenhar setas estilizadas ao lado do botão de saída
+            int arrowW = 40, arrowH = btnH;
+            Rectangle leftArrowRect = new Rectangle(closeBtnRect.X - arrowW - 8, closeBtnRect.Y, arrowW, arrowH);
+            Rectangle rightArrowRect = new Rectangle(closeBtnRect.X + closeBtnRect.Width + 8, closeBtnRect.Y, arrowW, arrowH);
+
+            bool leftHovered = leftArrowRect.Contains(mouse.X, mouse.Y) && _page > 1;
+            bool rightHovered = rightArrowRect.Contains(mouse.X, mouse.Y) && _page < 2;
+
+            Color arrowBg = Color.SaddleBrown;
+            Color arrowHoverBg = Color.Gold;
+            // desenhar fundos
+            spriteBatch.Draw(pixelTexture, leftArrowRect, leftHovered ? arrowHoverBg : arrowBg);
+            spriteBatch.Draw(pixelTexture, rightArrowRect, rightHovered ? arrowHoverBg : arrowBg);
+
+            // desenhar símbolos
+            if (font != null)
+            {
+                // Use ASCII arrows to avoid missing glyphs in the SpriteFont
+                string leftSym = "<";
+                string rightSym = ">";
+                Vector2 lSize = font.MeasureString(leftSym);
+                Vector2 rSize = font.MeasureString(rightSym);
+                spriteBatch.DrawString(font, leftSym, new Vector2(leftArrowRect.X + (leftArrowRect.Width - lSize.X) / 2, leftArrowRect.Y + (leftArrowRect.Height - lSize.Y) / 2), Color.White);
+                spriteBatch.DrawString(font, rightSym, new Vector2(rightArrowRect.X + (rightArrowRect.Width - rSize.X) / 2, rightArrowRect.Y + (rightArrowRect.Height - rSize.Y) / 2), Color.White);
+            }
+
+            // agora o botão de fechar
             if (closeHovered && mouseClicked)
             {
                 player.RemoveComponent<UpgradeRequestComponent>();
@@ -266,8 +262,25 @@ namespace CubeSurvivor.Systems
                 previousMouseState = mouse;
                 return false; // menu fechado
             }
-            
+
             DrawButton(spriteBatch, pixelTexture, font, closeBtnRect, "Fechar Menu", closeHovered, Color.Gray, Color.DarkGray);
+
+            // Processar clique das setas (usar mouseClicked)
+            if (mouseClicked)
+            {
+                if (leftHovered && _page > 1)
+                {
+                    _page = Math.Max(1, _page - 1);
+                    previousMouseState = mouse;
+                    return true; // manter menu aberto
+                }
+                if (rightHovered && _page < 2)
+                {
+                    _page = Math.Min(2, _page + 1);
+                    previousMouseState = mouse;
+                    return true; // manter menu aberto
+                }
+            }
 
             // Atualizar estado do mouse para a próxima chamada
             previousMouseState = mouse;

@@ -36,6 +36,8 @@ namespace CubeSurvivor
         private SpriteFont _font;
         private Texture2D _pixelTexture;
         private Texture2D _floorTexture;
+        private Texture2D _grassTexture;
+        private Texture2D _caveTexture;
         
         private TextureManager _textureManager;
         private SafeZoneManager _safeZoneManager;
@@ -110,7 +112,10 @@ namespace CubeSurvivor
                     {
                         Console.WriteLine("  Textura do piso não encontrada, usando cor sólida");
                     }
-                    
+                    // Carregar texturas para as metades do mapa
+                    _grassTexture = _textureManager.LoadTexture("grass", "grass.png");
+                    _caveTexture = _textureManager.LoadTexture("cave", "cave.png");
+
                     _textureManager.LoadTexture("player", "player.png");
                     _textureManager.LoadTexture("apple", "apple.png");
                     _textureManager.LoadTexture("brain", "brain.png");
@@ -140,6 +145,43 @@ namespace CubeSurvivor
                         screenWidth: GameConfig.ScreenWidth,
                         screenHeight: GameConfig.ScreenHeight
                     );
+                }
+
+                // Configurar BiomeSystem (ECS-friendly, open for extension)
+                Console.WriteLine("[Game1] Configurando BiomeSystem...");
+                var biomes = new System.Collections.Generic.List<CubeSurvivor.World.Biomes.Biome>();
+
+                // Calcular tamanho do mapa (padrão por enquanto)
+                int mapWidth = GameConfig.MapWidth;
+                int mapHeight = GameConfig.MapHeight;
+
+                // Esquerda = Cave, Direita = Forest
+                var caveRect = new Microsoft.Xna.Framework.Rectangle(0, 0, mapWidth / 2, mapHeight);
+                var forestRect = new Microsoft.Xna.Framework.Rectangle(mapWidth / 2, 0, mapWidth - mapWidth / 2, mapHeight);
+
+                biomes.Add(new CubeSurvivor.World.Biomes.Biome(
+                    CubeSurvivor.World.Biomes.BiomeType.Cave,
+                    caveRect,
+                    _caveTexture,
+                    allowsEnemySpawns: true,
+                    treeDensity: 0
+                ));
+
+                biomes.Add(new CubeSurvivor.World.Biomes.Biome(
+                    CubeSurvivor.World.Biomes.BiomeType.Forest,
+                    forestRect,
+                    _grassTexture,
+                    allowsEnemySpawns: false,
+                    treeDensity: 15
+                ));
+
+                var biomeSystem = new CubeSurvivor.Systems.World.BiomeSystem(biomes);
+                _world.AddSystem(biomeSystem);
+
+                // Informar o renderer sobre o provider de textura por posição (consulta ao BiomeSystem)
+                if (_backgroundRenderer != null)
+                {
+                    _backgroundRenderer.SetBiomeTextureProvider(pos => biomeSystem.GetTextureForPosition(pos));
                 }
 
                 Console.WriteLine("[Game1] Carregando fonte DefaultFont...");
@@ -213,7 +255,7 @@ namespace CubeSurvivor
                 _world.AddSystem(new ConstructionSystem(_worldObjectFactory));
 
                 Rectangle spawnArea = new Rectangle(0, 0, GameConfig.MapWidth, GameConfig.MapHeight);
-                _world.AddSystem(new EnemySpawnSystem(spawnArea, _enemyFactory, GameConfig.EnemySpawnInterval, GameConfig.MaxEnemies, _safeZoneManager));
+                _world.AddSystem(new EnemySpawnSystem(spawnArea, _enemyFactory, GameConfig.EnemySpawnInterval, GameConfig.MaxEnemies, _safeZoneManager, biomeSystem));
                 _world.AddSystem(new AppleSpawnSystem(spawnArea, _textureManager));
 
                 Console.WriteLine("[Game1] Criando definição de nível...");
