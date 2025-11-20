@@ -56,6 +56,13 @@ namespace CubeSurvivor
             _enemyFactory = new EnemyFactory();
             _bulletFactory = new BulletFactory();
             _worldObjectFactory = new WorldObjectFactory();
+            var weaponVisualFactory = new WeaponVisualFactory();
+            
+            // Configure PlayerFactory with weapon visual factory
+            if (_playerFactory is PlayerFactory pf)
+            {
+                pf.SetWeaponVisualFactory(weaponVisualFactory);
+            }
             
             Console.WriteLine("[Game1] Criando serviço de câmera...");
             _cameraService = new CameraService(
@@ -239,6 +246,12 @@ namespace CubeSurvivor
                 _world.AddSystem(new ConsumptionSystem());
                 _world.AddSystem(new AISystem());
                 _world.AddSystem(new MovementSystem());
+                
+                // AttachmentSystem must run after movement/input to update attached items
+                _world.AddSystem(new AttachmentSystem());
+                
+                // WeaponVisualSystem controls visibility of weapon visuals based on equipped items
+                _world.AddSystem(new WeaponVisualSystem());
                 
                 _bulletSystem = new BulletSystem();
                 _world.AddSystem(_bulletSystem);

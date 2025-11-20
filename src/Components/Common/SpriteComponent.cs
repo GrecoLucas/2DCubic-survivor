@@ -23,6 +23,12 @@ namespace CubeSurvivor.Components
         /// Camada de renderização para controlar ordem de desenho.
         /// </summary>
         public RenderLayer Layer { get; set; } = RenderLayer.Entities;
+        
+        /// <summary>
+        /// Offset de rotação para sprites que são desenhados com orientação não padrão.
+        /// Exemplo: sprite facing LEFT precisa de PI radianos para apontar para direita.
+        /// </summary>
+        public float FacingOffsetRadians { get; set; } = 0f;
 
         public SpriteComponent(Color color, Vector2 size, RenderLayer layer = RenderLayer.Entities)
         {

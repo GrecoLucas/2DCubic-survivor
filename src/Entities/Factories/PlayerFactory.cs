@@ -14,10 +14,16 @@ namespace CubeSurvivor.Entities
     public sealed class PlayerFactory : IPlayerFactory
     {
         private TextureManager _textureManager;
+        private IWeaponVisualFactory _weaponVisualFactory;
         
         public void SetTextureManager(TextureManager textureManager)
         {
             _textureManager = textureManager;
+        }
+        
+        public void SetWeaponVisualFactory(IWeaponVisualFactory weaponVisualFactory)
+        {
+            _weaponVisualFactory = weaponVisualFactory;
         }
         
         public Entity CreatePlayer(IGameWorld world, Vector2 position)
@@ -30,19 +36,33 @@ namespace CubeSurvivor.Entities
             // Usar textura se disponível, senão usar cor
             // Jogador usa a camada Entities (padrão)
             Texture2D playerTexture = _textureManager?.GetTexture("player");
+            SpriteComponent playerSprite;
             if (playerTexture != null)
             {
-                player.AddComponent(new SpriteComponent(playerTexture, 50f, 50f, null, RenderLayer.Entities));
+                playerSprite = new SpriteComponent(playerTexture, 50f, 50f, null, RenderLayer.Entities);
+                // Player texture faces LEFT, so add PI offset to make it face RIGHT when aiming right
+                playerSprite.FacingOffsetRadians = MathHelper.Pi;
             }
             else
             {
-                player.AddComponent(new SpriteComponent(Color.Blue, 50f, 50f, RenderLayer.Entities));
+                playerSprite = new SpriteComponent(Color.Blue, 50f, 50f, RenderLayer.Entities);
+                // Color squares face right by default, no offset needed
             }
+            player.AddComponent(playerSprite);
             player.AddComponent(new VelocityComponent(200f)); // Velocidade de 200 pixels/segundo
             // Player input with initial projectile properties
             player.AddComponent(new PlayerInputComponent(bulletSpeed: 600f, bulletDamage: 25f, bulletSize: 8f, shootCooldownTime: 0.5f));
             player.AddComponent(new HealthComponent(100f)); // 100 de vida
             player.AddComponent(new ColliderComponent(50f, 50f, ColliderTag.Player));
+            
+            // Add attachment sockets for player (normalized positions in texture space)
+            player.AddComponent(new PlayerSocketsComponent(new[]
+            {
+                // Right hand: top-left corner of sprite (when facing left)
+                new SpriteSocket(AttachmentSocketId.RightHand, new Vector2(0.95f, 0.1f)),
+                // Left hand: bottom-left corner of sprite (when facing left)
+                new SpriteSocket(AttachmentSocketId.LeftHand, new Vector2(0.95f, 0.9f))
+            }));
             
             // Componente de construção
             player.AddComponent(new BuilderComponent(GameConfig.PlayerBuildRange));
@@ -68,6 +88,13 @@ namespace CubeSurvivor.Entities
             inventory.SelectHotbarSlot(0);
             gun.OnEquip(player);
             player.GetComponent<HeldItemComponent>().SetHeldItem(gun, 0);
+            
+            // Create gun visual entity attached to player's right hand
+            // Note: gun texture is only for inventory/drops, not for equipped visual
+            if (_weaponVisualFactory != null)
+            {
+                _weaponVisualFactory.CreateGunVisual(world, player, null);
+            }
 
             return player;
         }

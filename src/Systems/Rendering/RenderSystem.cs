@@ -46,63 +46,53 @@ namespace CubeSurvivor.Systems
                 if (sprite == null || transform == null || !sprite.Enabled)
                     continue;
 
-                var position = transform.Position - sprite.Size / 2;
-                var rectangle = new Rectangle(
-                    (int)position.X,
-                    (int)position.Y,
-                    (int)sprite.Size.X,
-                    (int)sprite.Size.Y
-                );
+                // All entities use transform.Rotation + FacingOffsetRadians
+                float rotation = transform.Rotation + sprite.FacingOffsetRadians;
 
-                float rotation = entity.HasComponent<PlayerInputComponent>() ? 0f : transform.Rotation;
+                Texture2D tex = sprite.Texture ?? _pixelTexture;
+                Color color = sprite.Texture != null ? sprite.TintColor : sprite.Color;
 
-                Texture2D textureToUse = sprite.Texture ?? _pixelTexture;
-                Color colorToUse = sprite.Texture != null ? sprite.TintColor : sprite.Color;
+                // Source rectangle = full texture (no cropping)
+                Rectangle? sourceRect = null;
+
+                // Size of the source area in texture pixels
+                Vector2 sourceSize = sourceRect.HasValue
+                    ? new Vector2(sourceRect.Value.Width, sourceRect.Value.Height)
+                    : new Vector2(tex.Width, tex.Height);
+
+                // Origin = center of texture in texture pixels
+                Vector2 origin = sourceSize / 2f;
+
+                // Compute scale so final rendered size == sprite.Size (world units)
+                Vector2 scale;
+
+                if (sprite.Texture == null)
+                {
+                    // tex is _pixelTexture (1x1 pixel); scale IS the final size
+                    scale = sprite.Size;
+                }
+                else
+                {
+                    // tex is a real texture; scale must be finalSize / texturePixelSize
+                    scale = new Vector2(
+                        sprite.Size.X / sourceSize.X,
+                        sprite.Size.Y / sourceSize.Y
+                    );
+                }
 
                 _spriteBatch.Draw(
-                    textureToUse,
-                    rectangle,
-                    null,
-                    colorToUse,
+                    tex,
+                    transform.Position,    // entity center in world coords
+                    sourceRect,
+                    color,
                     rotation,
-                    Vector2.Zero,
+                    origin,                // center in texture pixels = rotation pivot
+                    scale,                 // multiplier to achieve sprite.Size
                     SpriteEffects.None,
                     0f
                 );
 
-                var weapon = entity.GetComponent<WeaponComponent>();
-                if (weapon != null && weapon.Enabled)
-                {
-                    float oppositeRotation = transform.Rotation + MathHelper.Pi;
-                    
-                    float offsetDistance = -35f;
-                    Vector2 offsetDirection = new Vector2(
-                        (float)System.Math.Cos(oppositeRotation),
-                        (float)System.Math.Sin(oppositeRotation)
-                    );
-                    Vector2 weaponOffset = offsetDirection * offsetDistance;
-                    
-                    Vector2 weaponCenter = transform.Position + weaponOffset;
-                    
-                    Rectangle weaponRect = new Rectangle(
-                        0,
-                        0,
-                        (int)weapon.Size.X,
-                        (int)weapon.Size.Y
-                    );
-
-                    _spriteBatch.Draw(
-                        _pixelTexture,
-                        weaponCenter,
-                        weaponRect,
-                        weapon.Color,
-                        oppositeRotation,
-                        weapon.Size / 2f,
-                        1f,
-                        SpriteEffects.None,
-                        0f
-                    );
-                }
+                // Weapon rendering removed - weapons are now entities with AttachmentComponent
             }
 
             _spriteBatch.End();

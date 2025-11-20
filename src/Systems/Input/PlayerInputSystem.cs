@@ -15,7 +15,7 @@ namespace CubeSurvivor.Systems
     public sealed class PlayerInputSystem : GameSystem
     {
         // Constantes para movimento e tiro
-        private const float BulletSpawnOffset = 30f;
+        private const float BulletSpawnOffset = 30f; // Fallback if no gun visual
 
         private readonly IBulletFactory _bulletFactory;
         private MouseState _previousMouseState;
@@ -141,7 +141,27 @@ namespace CubeSurvivor.Systems
 
                             float angle = baseAngle + offset;
                             Vector2 dir = new Vector2((float)System.Math.Cos(angle), (float)System.Math.Sin(angle));
-                            Vector2 bulletStartPos = transform.Position + dir * BulletSpawnOffset;
+                            
+                            // Spawn bullets from gun muzzle if available, otherwise fallback to player center
+                            Vector2 bulletStartPos;
+                            var gunVisual = FindGunVisual(entity);
+                            
+                            if (gunVisual != null)
+                            {
+                                var gunT = gunVisual.GetComponent<TransformComponent>();
+                                var muzzle = gunVisual.GetComponent<GunMuzzleComponent>();
+                                
+                                // Transform muzzle local offset to world space
+                                Vector2 muzzleWorldOffset =
+                                    Vector2.Transform(muzzle.LocalMuzzleOffset, Matrix.CreateRotationZ(gunT.Rotation));
+                                
+                                bulletStartPos = gunT.Position + muzzleWorldOffset;
+                            }
+                            else
+                            {
+                                // Fallback: spawn from player center with offset
+                                bulletStartPos = transform.Position + dir * BulletSpawnOffset;
+                            }
 
                             float speed = gun.BulletSpeed;
                             float damage = gun.Damage;
@@ -181,6 +201,20 @@ namespace CubeSurvivor.Systems
 
             _previousMouseState = mouseState;
             _previousKeyboardState = keyboardState;
+        }
+
+        /// <summary>
+        /// Find the gun visual entity attached to the player
+        /// </summary>
+        private Entity FindGunVisual(Entity player)
+        {
+            foreach (var e in World.GetEntitiesWithComponent<GunMuzzleComponent>())
+            {
+                var attach = e.GetComponent<AttachmentComponent>();
+                if (attach != null && attach.Parent == player)
+                    return e;
+            }
+            return null;
         }
 
         private Vector2 ScreenToWorld(Vector2 screenPos)
