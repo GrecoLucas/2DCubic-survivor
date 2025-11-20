@@ -189,13 +189,13 @@ namespace CubeSurvivor.Inventory.Systems
             else
             {
                 // Fallback: desenhar cor representativa
-                DrawRectangle(
-                    x + iconPadding, 
-                    y + iconPadding, 
-                    iconSize, 
-                    iconSize, 
-                    stack.Item.IconColor
-                );
+            DrawRectangle(
+                x + iconPadding, 
+                y + iconPadding, 
+                iconSize, 
+                iconSize, 
+                stack.Item.IconColor
+            );
             }
             
             // Desenhar quantidade se > 1
