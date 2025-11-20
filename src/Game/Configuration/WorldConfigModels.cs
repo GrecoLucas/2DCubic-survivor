@@ -122,6 +122,40 @@ namespace CubeSurvivor
 
         [JsonPropertyName("woodSpawnRegions")]
         public List<JsonWoodSpawnRegion> WoodSpawnRegions { get; set; } = new();
+
+        [JsonPropertyName("biomes")]
+        public List<JsonBiomeDefinition> Biomes { get; set; } = new();
     }
+
+    /// <summary>
+    /// Modelo JSON para definição de bioma (área do mapa com propriedades específicas).
+    /// </summary>
+    public sealed class JsonBiomeDefinition
+    {
+        [JsonPropertyName("x")]
+        public int X { get; set; }
+
+        [JsonPropertyName("y")]
+        public int Y { get; set; }
+
+        [JsonPropertyName("width")]
+        public int Width { get; set; }
+
+        [JsonPropertyName("height")]
+        public int Height { get; set; }
+
+        [JsonPropertyName("type")]
+        public string Type { get; set; }
+
+        [JsonPropertyName("allowsEnemySpawns")]
+        public bool AllowsEnemySpawns { get; set; } = true;
+
+        [JsonPropertyName("treeDensity")]
+        public int TreeDensity { get; set; } = 0;
+
+        [JsonPropertyName("texture")]
+        public string Texture { get; set; }
+    }
+
 }
 

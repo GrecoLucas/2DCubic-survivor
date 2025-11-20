@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text.Json;
 using Microsoft.Xna.Framework;
+using CubeSurvivor.World.Biomes;
 
 namespace CubeSurvivor
 {
@@ -105,6 +106,40 @@ namespace CubeSurvivor
                 // Armazenar dimensões do mapa (pode ser usado para atualizar GameConfig em runtime)
                 level.MapWidth = jsonWorld.MapWidth;
                 level.MapHeight = jsonWorld.MapHeight;
+
+                // Converter biomas (se houver)
+                if (jsonWorld.Biomes != null && jsonWorld.Biomes.Count > 0)
+                {
+                    foreach (var jb in jsonWorld.Biomes)
+                    {
+                        var rect = new Rectangle(jb.X, jb.Y, jb.Width, jb.Height);
+                        CubeSurvivor.World.Biomes.BiomeType type = CubeSurvivor.World.Biomes.BiomeType.Unknown;
+                        if (!string.IsNullOrWhiteSpace(jb.Type))
+                        {
+                            if (!Enum.TryParse<CubeSurvivor.World.Biomes.BiomeType>(jb.Type, true, out type))
+                            {
+                                type = CubeSurvivor.World.Biomes.BiomeType.Unknown;
+                            }
+                        }
+
+                        var textureKey = jb.Texture;
+                        if (string.IsNullOrWhiteSpace(textureKey) && !string.IsNullOrWhiteSpace(jb.Type))
+                        {
+                            textureKey = jb.Type.ToLower() + ".png";
+                        }
+
+                        level.Biomes.Add(new BiomeDefinition
+                        {
+                            Area = rect,
+                            Type = type,
+                            AllowsEnemySpawns = jb.AllowsEnemySpawns,
+                            TreeDensity = jb.TreeDensity,
+                            TextureKey = textureKey
+                        });
+                    }
+
+                    Console.WriteLine($"[WorldLoader] - {jsonWorld.Biomes.Count} biomas carregados");
+                }
 
                 return level;
             }

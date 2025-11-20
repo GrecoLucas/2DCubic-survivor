@@ -10,9 +10,8 @@ namespace CubeSurvivor
     /// </summary>
     public sealed class WorldBackgroundRenderer
     {
-        private readonly Texture2D _floorTexture;
-        private Texture2D _leftTexture; // textura para metade esquerda
-        private Texture2D _rightTexture; // textura para metade direita
+        // Escalonável: nenhum conceito fixo de "floor" ou metades; tudo vem do provider de bioma.
+        // Se quiser pré-computar no futuro, pode-se armazenar uma grade de texturas derivada dos biomas.
         private System.Func<Microsoft.Xna.Framework.Vector2, Texture2D> _biomeTextureProvider;
         private int _mapWidth;
         private int _mapHeight;
@@ -20,9 +19,8 @@ namespace CubeSurvivor
         private readonly int _screenWidth;
         private readonly int _screenHeight;
 
-        public WorldBackgroundRenderer(Texture2D floorTexture, int mapWidth, int mapHeight, int tileSize, int screenWidth, int screenHeight)
+        public WorldBackgroundRenderer(int mapWidth, int mapHeight, int tileSize, int screenWidth, int screenHeight)
         {
-            _floorTexture = floorTexture;
             _mapWidth = mapWidth;
             _mapHeight = mapHeight;
             _tileSize = tileSize;
@@ -30,14 +28,7 @@ namespace CubeSurvivor
             _screenHeight = screenHeight;
         }
 
-        // Define as texturas para as metades esquerda e direita do mapa
-        public void SetSplitTextures(Texture2D leftTexture, Texture2D rightTexture)
-        {
-            _leftTexture = leftTexture;
-            _rightTexture = rightTexture;
-        }
-
-        // Permite configurar um provider que retorna a textura do bioma para uma posição
+        // Configura provider que retorna textura do bioma para uma posição; obrigatório para renderização.
         public void SetBiomeTextureProvider(System.Func<Microsoft.Xna.Framework.Vector2, Texture2D> provider)
         {
             _biomeTextureProvider = provider;
@@ -60,8 +51,8 @@ namespace CubeSurvivor
         /// <param name="cameraTransform">Transformação da câmera</param>
         public void Draw(SpriteBatch spriteBatch, Matrix cameraTransform)
         {
-            // Se houver texturas divididas, usar as metades conforme a posição X.
-            if (_floorTexture == null && _leftTexture == null && _rightTexture == null)
+            // Sem provider não há nada para desenhar (tudo é data-driven via JSON -> BiomeSystem).
+            if (_biomeTextureProvider == null)
                 return;
 
             // Calcular o retângulo visível no mundo
@@ -96,30 +87,12 @@ namespace CubeSurvivor
                     if (worldX >= _mapWidth || worldY >= _mapHeight)
                         continue;
 
-                    Texture2D tex = _floorTexture;
-
-                    // Se houver um provider de bioma, usar a textura retornada por ele
-                    if (_biomeTextureProvider != null)
-                    {
-                        // consultar pelo centro do tile
-                        var tileCenter = new Microsoft.Xna.Framework.Vector2(worldX + _tileSize / 2, worldY + _tileSize / 2);
-                        var providerTex = _biomeTextureProvider(tileCenter);
-                        tex = providerTex ?? _floorTexture;
-                    }
-                    else if (_leftTexture != null || _rightTexture != null)
-                    {
-                        // Se foi definida uma textura para cada metade, escolher por X
-                        if (worldX + _tileSize / 2 < _mapWidth / 2)
-                            tex = _leftTexture ?? _floorTexture;
-                        else
-                            tex = _rightTexture ?? _floorTexture;
-                    }
-
-                    if (tex != null)
-                    {
-                        var dest = new Rectangle(worldX, worldY, _tileSize, _tileSize);
-                        spriteBatch.Draw(tex, dest, Color.White);
-                    }
+                    var tileCenter = new Microsoft.Xna.Framework.Vector2(worldX + _tileSize / 2, worldY + _tileSize / 2);
+                    var tex = _biomeTextureProvider(tileCenter);
+                    if (tex == null)
+                        continue; // nenhum bioma cobre este tile -> não desenha
+                    var dest = new Rectangle(worldX, worldY, _tileSize, _tileSize);
+                    spriteBatch.Draw(tex, dest, Color.White);
                 }
             }
 

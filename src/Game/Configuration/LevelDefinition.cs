@@ -86,6 +86,23 @@ namespace CubeSurvivor
         /// Lista de regiões onde recursos (madeira) podem spawnar periodicamente.
         /// </summary>
         public List<WoodSpawnRegionDefinition> WoodSpawnRegions { get; } = new();
+
+        /// <summary>
+        /// Lista de biomas definidos pelo nível.
+        /// </summary>
+        public List<BiomeDefinition> Biomes { get; } = new();
     }
 }
+
+    /// <summary>
+    /// Representa um bioma carregado do JSON dentro do LevelDefinition.
+    /// </summary>
+    public sealed class BiomeDefinition
+    {
+        public Microsoft.Xna.Framework.Rectangle Area { get; set; }
+        public CubeSurvivor.World.Biomes.BiomeType Type { get; set; } = CubeSurvivor.World.Biomes.BiomeType.Unknown;
+        public bool AllowsEnemySpawns { get; set; } = true;
+        public int TreeDensity { get; set; } = 0;
+        public string TextureKey { get; set; }
+    }
 
