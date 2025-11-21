@@ -47,39 +47,21 @@
       "y": 1500,
       "type": "hammer",
       "amount": 1
-    },
-    {
-      "x": 1200,
-      "y": 900,
-      "type": "wood",
-      "amount": 5
-    },
-    {
-      "x": 1500,
-      "y": 1100,
-      "type": "wood",
-      "amount": 5
     }
   ],
   "woodSpawnRegions": [
     {
-      "x": 500,
-      "y": 500,
-      "width": 3000,
-      "height": 3000,
-      "maxActiveWood": 20
+      "x": 0,
+      "y": 0,
+      "width": 2000,
+      "height": 4000,
+      "maxActiveWood": 80
     }
   ]
   ,
   "biomes": [
-    { "x": 0,    "y": 0, "width": 500, "height": 4000, "type": "Cave",   "allowsEnemySpawns": true,  "treeDensity": 0,  "texture": "cave.png" },
-    { "x": 500,  "y": 0, "width": 500, "height": 4000, "type": "Forest", "allowsEnemySpawns": false, "treeDensity": 15, "texture": "grass.png" },
-    { "x": 1000, "y": 0, "width": 500, "height": 4000, "type": "Cave",   "allowsEnemySpawns": true,  "treeDensity": 0,  "texture": "cave.png" },
-    { "x": 1500, "y": 0, "width": 500, "height": 4000, "type": "Forest", "allowsEnemySpawns": false, "treeDensity": 15, "texture": "grass.png" },
-    { "x": 2000, "y": 0, "width": 500, "height": 4000, "type": "Cave",   "allowsEnemySpawns": true,  "treeDensity": 0,  "texture": "cave.png" },
-    { "x": 2500, "y": 0, "width": 500, "height": 4000, "type": "Forest", "allowsEnemySpawns": false, "treeDensity": 15, "texture": "grass.png" },
-    { "x": 3000, "y": 0, "width": 500, "height": 4000, "type": "Cave",   "allowsEnemySpawns": true,  "treeDensity": 0,  "texture": "cave.png" },
-    { "x": 3500, "y": 0, "width": 500, "height": 4000, "type": "Forest", "allowsEnemySpawns": false, "treeDensity": 15, "texture": "grass.png" }
+    { "x": 0,    "y": 0, "width": 2000, "height": 4000, "type": "Forest", "allowsEnemySpawns": false, "treeDensity": 40, "texture": "grass.png" },
+    { "x": 2000, "y": 0, "width": 2000, "height": 4000, "type": "Cave",   "allowsEnemySpawns": true,  "treeDensity": 0,  "texture": "cave.png" }
   ]
 }
 

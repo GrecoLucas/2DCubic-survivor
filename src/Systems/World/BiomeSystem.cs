@@ -42,6 +42,11 @@ namespace CubeSurvivor.Systems.World
             return GetBiomeAt(pos)?.AllowsEnemySpawns ?? false;
         }
 
+        public System.Collections.Generic.IEnumerable<Biome> GetAllBiomes()
+        {
+            return _biomes;
+        }
+
         public override void Update(GameTime gameTime)
         {
             // service-style system; nothing per-frame for now

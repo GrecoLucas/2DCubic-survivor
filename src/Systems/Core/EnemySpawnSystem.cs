@@ -64,6 +64,38 @@ namespace CubeSurvivor.Systems
 
         private void SpawnEnemy()
         {
+            // Verificar se o jogador está próximo da caverna antes de spawnar
+            if (_biomeSystem != null)
+            {
+                Entity player = null;
+                foreach (var entity in World.GetEntitiesWithComponent<PlayerInputComponent>())
+                {
+                    player = entity;
+                    break;
+                }
+
+                if (player != null)
+                {
+                    var playerTransform = player.GetComponent<TransformComponent>();
+                    if (playerTransform != null)
+                    {
+                        var playerBiome = _biomeSystem.GetBiomeAt(playerTransform.Position);
+                        
+                        // Só spawnar inimigos se o jogador estiver na caverna ou próximo dela (dentro de 400 pixels)
+                        if (playerBiome == null || playerBiome.Type != CubeSurvivor.World.Biomes.BiomeType.Cave)
+                        {
+                            // Verificar se jogador está próximo da borda da caverna (x=2000)
+                            const float proximityThreshold = 400f;
+                            if (playerTransform.Position.X < 2000 - proximityThreshold)
+                            {
+                                // Jogador está longe da caverna, não spawnar
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+
             // Gerar posição aleatória nas bordas do spawn area
             Vector2 position = GetRandomSpawnPosition();
 

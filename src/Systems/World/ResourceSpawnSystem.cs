@@ -14,14 +14,16 @@ namespace CubeSurvivor.Systems
     {
         private readonly WoodEntityFactory _woodFactory;
         private readonly LevelDefinition _levelDefinition;
+        private readonly CubeSurvivor.Systems.World.BiomeSystem _biomeSystem;
         private readonly Random _random = new Random();
 
         private float _timer;
 
-        public ResourceSpawnSystem(LevelDefinition levelDefinition, TextureManager textureManager = null)
+        public ResourceSpawnSystem(LevelDefinition levelDefinition, TextureManager textureManager = null, CubeSurvivor.Systems.World.BiomeSystem biomeSystem = null)
         {
             _levelDefinition = levelDefinition ?? throw new ArgumentNullException(nameof(levelDefinition));
             _woodFactory = new WoodEntityFactory();
+            _biomeSystem = biomeSystem;
             if (textureManager != null)
             {
                 _woodFactory.SetTextureManager(textureManager);
@@ -79,12 +81,20 @@ namespace CubeSurvivor.Systems
                 var pos = new Vector2(x, y);
 
                 // Verificar se a posição está livre
-                if (IsPositionFree(pos))
+                if (!IsPositionFree(pos))
+                    continue;
+
+                // Se temos BiomeSystem e a posição não pertence à floresta, não spawnar
+                if (_biomeSystem != null)
                 {
-                    _woodFactory.CreateWood(World, pos, 1);
-                    System.Console.WriteLine($"[ResourceSpawn] ✓ Madeira spawn em ({x:F0}, {y:F0})");
-                    break;
+                    var biome = _biomeSystem.GetBiomeAt(pos);
+                    if (biome == null || biome.Type != CubeSurvivor.World.Biomes.BiomeType.Forest)
+                        continue;
                 }
+
+                _woodFactory.CreateWood(World, pos, 1);
+                System.Console.WriteLine($"[ResourceSpawn] ✓ Madeira spawn em ({x:F0}, {y:F0})");
+                break;
             }
         }
 

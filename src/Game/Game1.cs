@@ -44,6 +44,7 @@ namespace CubeSurvivor
         private ISpatialIndex _spatialIndex;
         private WorldBackgroundRenderer _backgroundRenderer;
         private BulletSystem _bulletSystem;
+        private CubeSurvivor.Systems.World.BiomeSystem _biomeSystem;
 
         public Game1()
         {
@@ -181,11 +182,15 @@ namespace CubeSurvivor
                 }
                 // Sem fallback legado de metades; requer definição JSON para controle total.
 
-                var biomeSystem = new CubeSurvivor.Systems.World.BiomeSystem(biomes);
-                _world.AddSystem(biomeSystem);
+                _biomeSystem = new CubeSurvivor.Systems.World.BiomeSystem(biomes);
+                _world.AddSystem(_biomeSystem);
+
+                // Sistema para spawnar árvores iniciais baseado em treeDensity
+                var treeSpawnSystem = new CubeSurvivor.Systems.World.BiomeTreeSpawnSystem(_biomeSystem, _textureManager);
+                _world.AddSystem(treeSpawnSystem);
 
                 // Informar o renderer sobre o provider de textura por posição (consulta ao BiomeSystem)
-                _backgroundRenderer.SetBiomeTextureProvider(pos => biomeSystem.GetTextureForPosition(pos));
+                _backgroundRenderer.SetBiomeTextureProvider(pos => _biomeSystem.GetTextureForPosition(pos));
 
                 Console.WriteLine("[Game1] Carregando fonte DefaultFont...");
                 try
@@ -244,7 +249,7 @@ namespace CubeSurvivor
                 _world.AddSystem(_inventoryDragDropSystem);
                 _world.AddSystem(new PickupSystem());
                 _world.AddSystem(new ConsumptionSystem());
-                _world.AddSystem(new AISystem());
+                _world.AddSystem(new AISystem(_biomeSystem));
                 _world.AddSystem(new MovementSystem());
                 
                 // AttachmentSystem must run after movement/input to update attached items
@@ -264,7 +269,7 @@ namespace CubeSurvivor
                 _world.AddSystem(new ConstructionSystem(_worldObjectFactory));
 
                 Rectangle spawnArea = new Rectangle(0, 0, GameConfig.MapWidth, GameConfig.MapHeight);
-                _world.AddSystem(new EnemySpawnSystem(spawnArea, _enemyFactory, GameConfig.EnemySpawnInterval, GameConfig.MaxEnemies, _safeZoneManager, biomeSystem));
+                _world.AddSystem(new EnemySpawnSystem(spawnArea, _enemyFactory, GameConfig.EnemySpawnInterval, GameConfig.MaxEnemies, _safeZoneManager, _biomeSystem));
                 _world.AddSystem(new AppleSpawnSystem(spawnArea, _textureManager));
                 
                 Console.WriteLine("[Game1] LoadContent() concluído com sucesso!");
@@ -330,7 +335,7 @@ namespace CubeSurvivor
                 }
 
                 // Adicionar ResourceSpawnSystem depois de carregar o levelDefinition
-                _world.AddSystem(new ResourceSpawnSystem(_levelDefinition, _textureManager));
+                _world.AddSystem(new ResourceSpawnSystem(_levelDefinition, _textureManager, _biomeSystem));
                 Console.WriteLine("[Game1] ResourceSpawnSystem adicionado");
             }
             

@@ -20,8 +20,8 @@ namespace CubeSurvivor
         public const float PlayerBulletLifetime = 5f;
 
         // Configurações de spawn de inimigos
-        public const float EnemySpawnInterval = 2f;
-        public const int MaxEnemies = 100;
+        public const float EnemySpawnInterval = 5f; // Reduzido: spawn a cada 5 segundos (antes era 2s)
+        public const int MaxEnemies = 50; // Reduzido: máximo de 50 inimigos (antes 100)
 
         // Configurações do jogador
         public const float PlayerMoveSpeed = 200f;

@@ -10,6 +10,13 @@ namespace CubeSurvivor.Systems
     /// </summary>
     public sealed class AISystem : GameSystem
     {
+        private readonly CubeSurvivor.Systems.World.BiomeSystem _biomeSystem;
+
+        public AISystem(CubeSurvivor.Systems.World.BiomeSystem biomeSystem = null)
+        {
+            _biomeSystem = biomeSystem;
+        }
+
         public override void Update(GameTime gameTime)
         {
             // Encontrar o jogador
@@ -50,6 +57,26 @@ namespace CubeSurvivor.Systems
                 if (distance > 0)
                 {
                     direction.Normalize();
+
+                    // Calcular deslocamento pretendido neste frame
+                    var displacement = direction * ai.ChaseSpeed * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    var intendedPos = transform.Position + displacement;
+
+                    // Se temos um BiomeSystem, impedir que inimigos saiam do bioma atual
+                    if (_biomeSystem != null)
+                    {
+                        var currentBiome = _biomeSystem.GetBiomeAt(transform.Position);
+                        var intendedBiome = _biomeSystem.GetBiomeAt(intendedPos);
+
+                        // Se o inimigo está na caverna e o próximo passo o tiraria da caverna, pare-o
+                        if (currentBiome != null && currentBiome.Type == CubeSurvivor.World.Biomes.BiomeType.Cave
+                            && (intendedBiome == null || intendedBiome.Type != CubeSurvivor.World.Biomes.BiomeType.Cave))
+                        {
+                            velocity.Velocity = Vector2.Zero;
+                            continue;
+                        }
+                    }
+
                     velocity.Velocity = direction * ai.ChaseSpeed;
                 }
             }
