@@ -53,6 +53,15 @@ namespace CubeSurvivor
     }
 
     /// <summary>
+    /// Define uma região onde ouro pode spawnar periodicamente.
+    /// </summary>
+    public sealed class GoldSpawnRegionDefinition
+    {
+        public Rectangle Area { get; set; }
+        public int MaxActiveGold { get; set; }
+    }
+
+    /// <summary>
     /// Define um nível/mapa completo com todos os seus elementos.
     /// </summary>
     public sealed class LevelDefinition
@@ -88,6 +97,11 @@ namespace CubeSurvivor
         public List<WoodSpawnRegionDefinition> WoodSpawnRegions { get; } = new();
 
         /// <summary>
+        /// Lista de regiões onde ouro pode spawnar periodicamente.
+        /// </summary>
+        public List<GoldSpawnRegionDefinition> GoldSpawnRegions { get; } = new();
+
+        /// <summary>
         /// Lista de biomas definidos pelo nível.
         /// </summary>
         public List<BiomeDefinition> Biomes { get; } = new();
@@ -103,6 +117,7 @@ namespace CubeSurvivor
         public CubeSurvivor.World.Biomes.BiomeType Type { get; set; } = CubeSurvivor.World.Biomes.BiomeType.Unknown;
         public bool AllowsEnemySpawns { get; set; } = true;
         public int TreeDensity { get; set; } = 0;
+        public int GoldDensity { get; set; } = 0;
         public string TextureKey { get; set; }
     }
 

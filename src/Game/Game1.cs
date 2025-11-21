@@ -176,7 +176,8 @@ namespace CubeSurvivor
                             bdef.Area,
                             tex,
                             allowsEnemySpawns: bdef.AllowsEnemySpawns,
-                            treeDensity: bdef.TreeDensity
+                            treeDensity: bdef.TreeDensity,
+                            goldDensity: bdef.GoldDensity
                         ));
                     }
                 }

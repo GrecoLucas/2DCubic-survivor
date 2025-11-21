@@ -57,11 +57,19 @@
       "height": 4000,
       "maxActiveWood": 80
     }
-  ]
-  ,
+  ],
+  "goldSpawnRegions": [
+    {
+      "x": 2600,
+      "y": 200,
+      "width": 800,
+      "height": 3600,
+      "maxActiveGold": 10
+    }
+  ],
   "biomes": [
-    { "x": 0,    "y": 0, "width": 2000, "height": 4000, "type": "Forest", "allowsEnemySpawns": false, "treeDensity": 40, "texture": "grass.png" },
-    { "x": 2000, "y": 0, "width": 2000, "height": 4000, "type": "Cave",   "allowsEnemySpawns": true,  "treeDensity": 0,  "texture": "cave.png" }
+    { "x": 0,    "y": 0, "width": 2000, "height": 4000, "type": "Forest", "allowsEnemySpawns": false, "treeDensity": 40, "goldDensity": 0, "texture": "grass.png" },
+    { "x": 2000, "y": 0, "width": 2000, "height": 4000, "type": "Cave",   "allowsEnemySpawns": true,  "treeDensity": 0,  "goldDensity": 40, "texture": "cave.png" }
   ]
 }
 

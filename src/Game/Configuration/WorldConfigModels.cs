@@ -100,6 +100,27 @@ namespace CubeSurvivor
     }
 
     /// <summary>
+    /// Modelo JSON para definição de região de spawn de ouro.
+    /// </summary>
+    public sealed class JsonGoldSpawnRegion
+    {
+        [JsonPropertyName("x")]
+        public int X { get; set; }
+
+        [JsonPropertyName("y")]
+        public int Y { get; set; }
+
+        [JsonPropertyName("width")]
+        public int Width { get; set; }
+
+        [JsonPropertyName("height")]
+        public int Height { get; set; }
+
+        [JsonPropertyName("maxActiveGold")]
+        public int MaxActiveGold { get; set; }
+    }
+
+    /// <summary>
     /// Modelo JSON raiz para definição completa de um mundo/nível.
     /// Este formato será eventualmente substituído/complementado por TMX (Tiled) maps.
     /// </summary>
@@ -122,6 +143,9 @@ namespace CubeSurvivor
 
         [JsonPropertyName("woodSpawnRegions")]
         public List<JsonWoodSpawnRegion> WoodSpawnRegions { get; set; } = new();
+
+        [JsonPropertyName("goldSpawnRegions")]
+        public List<JsonGoldSpawnRegion> GoldSpawnRegions { get; set; } = new();
 
         [JsonPropertyName("biomes")]
         public List<JsonBiomeDefinition> Biomes { get; set; } = new();
@@ -152,6 +176,9 @@ namespace CubeSurvivor
 
         [JsonPropertyName("treeDensity")]
         public int TreeDensity { get; set; } = 0;
+
+        [JsonPropertyName("goldDensity")]
+        public int GoldDensity { get; set; } = 0;
 
         [JsonPropertyName("texture")]
         public string Texture { get; set; }

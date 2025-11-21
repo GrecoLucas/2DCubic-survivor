@@ -101,6 +101,20 @@ namespace CubeSurvivor
                 }
 
                 Console.WriteLine($"[WorldLoader] - {jsonWorld.WoodSpawnRegions.Count} regiões de spawn de madeira carregadas");
+                // Converter regiões de spawn de ouro (se houver)
+                if (jsonWorld.GoldSpawnRegions != null)
+                {
+                    foreach (var g in jsonWorld.GoldSpawnRegions)
+                    {
+                        level.GoldSpawnRegions.Add(new GoldSpawnRegionDefinition
+                        {
+                            Area = new Rectangle(g.X, g.Y, g.Width, g.Height),
+                            MaxActiveGold = g.MaxActiveGold
+                        });
+                    }
+
+                    Console.WriteLine($"[WorldLoader] - {jsonWorld.GoldSpawnRegions.Count} regiões de spawn de ouro carregadas");
+                }
                 Console.WriteLine("[WorldLoader] ✓ Mundo carregado com sucesso!");
 
                 // Armazenar dimensões do mapa (pode ser usado para atualizar GameConfig em runtime)
@@ -134,6 +148,7 @@ namespace CubeSurvivor
                             Type = type,
                             AllowsEnemySpawns = jb.AllowsEnemySpawns,
                             TreeDensity = jb.TreeDensity,
+                            GoldDensity = jb.GoldDensity,
                             TextureKey = textureKey
                         });
                     }

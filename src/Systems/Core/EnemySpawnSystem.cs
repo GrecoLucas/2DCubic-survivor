@@ -54,8 +54,46 @@ namespace CubeSurvivor.Systems
             // Usar intervalo dinâmico que diminui conforme a dificuldade sobe
             float currentInterval = GameConfig.GetSpawnInterval(_spawnInterval, _elapsedTime);
 
+            // Se o jogador estiver dentro de uma caverna, acelerar spawn e permitir mais inimigos
+            bool playerInCave = false;
+            if (_biomeSystem != null)
+            {
+                Entity player = null;
+                foreach (var entity in World.GetEntitiesWithComponent<PlayerInputComponent>())
+                {
+                    player = entity;
+                    break;
+                }
+
+                if (player != null)
+                {
+                    var t = player.GetComponent<TransformComponent>();
+                    if (t != null)
+                    {
+                        var pb = _biomeSystem.GetBiomeAt(t.Position);
+                        if (pb != null && pb.Type == CubeSurvivor.World.Biomes.BiomeType.Cave)
+                        {
+                            playerInCave = true;
+                        }
+                    }
+                }
+            }
+
+            if (playerInCave)
+            {
+                // spawn mais rápido dentro da caverna
+                currentInterval *= 0.08f; // 2.5x mais rápido
+            }
+
+            // Calcular máximo efetivo de inimigos (aumentado em cavernas)
+            int effectiveMax = _maxEnemies;
+            if (playerInCave)
+            {
+                effectiveMax = Math.Max(_maxEnemies, (int)(_maxEnemies * 1.8f));
+            }
+
             // Spawnar novo inimigo se possível
-            if (_spawnTimer >= currentInterval && enemyCount < _maxEnemies)
+            if (_spawnTimer >= currentInterval && enemyCount < effectiveMax)
             {
                 _spawnTimer = 0f;
                 SpawnEnemy();
