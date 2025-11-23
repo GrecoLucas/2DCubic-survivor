@@ -360,7 +360,7 @@ namespace CubeSurvivor.Game.States
             Console.WriteLine("[MainMenu] Creating new map with defaults...");
 
             string name = $"new_map_{DateTime.Now:yyyyMMdd_HHmmss}";
-            var mapDef = MapLoader.CreateDefaultMap(256, 256, 128, 64);
+            var mapDef = MapLoader.CreateDefaultMap(256, 256, 32, 64); // Use player size (32px)
             string path = System.IO.Path.Combine("assets", "maps", $"{name}.json");
 
             MapSaver.Save(path, mapDef);

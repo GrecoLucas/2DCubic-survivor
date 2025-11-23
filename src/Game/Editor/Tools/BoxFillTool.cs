@@ -52,7 +52,7 @@ namespace CubeSurvivor.Game.Editor.Tools
             int maxY = context.MapDefinition.MapHeight;
             int filledCount = 0;
 
-            EditorLogger.Log("BoxFillTool", $"Filling rect: Mode={context.EditMode} BrushId={context.ActiveBrushId} Layer={context.ActiveLayerIndex}");
+            EditorLogger.Log("BoxFillTool", $"Filling rect: LayerKind={context.ActiveLayerKind} BrushId={context.ActiveBrushId}");
 
             for (int y = rect.Top; y < rect.Bottom; y++)
             {
@@ -64,13 +64,24 @@ namespace CubeSurvivor.Game.Editor.Tools
                         continue;
                     }
 
-                    if (context.EditMode == EditMode.Tiles)
+                    // Use ActiveLayerKind to determine what to fill
+                    switch (context.ActiveLayerKind)
                     {
-                        context.Map.SetTileAt(x, y, context.ActiveBrushId, context.ActiveLayerIndex);
-                    }
-                    else
-                    {
-                        context.Map.SetBlockAtTile(x, y, (BlockType)context.ActiveBrushId, context.ActiveLayerIndex);
+                        case EditableLayerKind.Tiles:
+                            context.Map.SetTileAt(x, y, context.ActiveBrushId, context.ActiveTileLayerIndex);
+                            break;
+
+                        case EditableLayerKind.Blocks:
+                            context.Map.SetBlockAtTile(x, y, (BlockType)context.ActiveBrushId, context.ActiveBlockLayerIndex);
+                            break;
+
+                        case EditableLayerKind.ItemsLow:
+                            context.Map.SetItemAtTile(x, y, (ItemType)context.ActiveBrushId, 0);
+                            break;
+
+                        case EditableLayerKind.ItemsHigh:
+                            context.Map.SetItemAtTile(x, y, (ItemType)context.ActiveBrushId, 1);
+                            break;
                     }
                     filledCount++;
                 }

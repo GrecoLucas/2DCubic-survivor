@@ -39,13 +39,13 @@ namespace CubeSurvivor.Entities
             SpriteComponent playerSprite;
             if (playerTexture != null)
             {
-                playerSprite = new SpriteComponent(playerTexture, 50f, 50f, null, RenderLayer.Entities);
+                playerSprite = new SpriteComponent(playerTexture, 32f, 32f, null, RenderLayer.Entities);
                 // Player texture faces LEFT, so add PI offset to make it face RIGHT when aiming right
                 playerSprite.FacingOffsetRadians = MathHelper.Pi;
             }
             else
             {
-                playerSprite = new SpriteComponent(Color.Blue, 50f, 50f, RenderLayer.Entities);
+                playerSprite = new SpriteComponent(Color.Blue, 32f, 32f, RenderLayer.Entities);
                 // Color squares face right by default, no offset needed
             }
             player.AddComponent(playerSprite);
@@ -53,7 +53,7 @@ namespace CubeSurvivor.Entities
             // Player input with initial projectile properties
             player.AddComponent(new PlayerInputComponent(bulletSpeed: 600f, bulletDamage: 25f, bulletSize: 8f, shootCooldownTime: 0.5f));
             player.AddComponent(new HealthComponent(100f)); // 100 de vida
-            player.AddComponent(new ColliderComponent(50f, 50f, ColliderTag.Player));
+            player.AddComponent(new ColliderComponent(32f, 32f, ColliderTag.Player));
             
             // Add attachment sockets for player (normalized positions in texture space)
             player.AddComponent(new PlayerSocketsComponent(new[]

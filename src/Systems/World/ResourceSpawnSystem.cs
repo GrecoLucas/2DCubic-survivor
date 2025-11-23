@@ -84,7 +84,7 @@ namespace CubeSurvivor.Systems.World
                         if (int.TryParse(maxStr, out int parsed))
                         {
                             maxActive = parsed;
-                        }
+                }
                     }
 
                     // Count existing resources in this region
@@ -100,7 +100,10 @@ namespace CubeSurvivor.Systems.World
 
         private void SpawnWood(RegionDefinition region)
         {
-            Vector2 position = GetRandomPositionInRegion(region.Area);
+            // Convert region area from tile coordinates to world pixels
+            int tileSize = 32; // Default - TODO: get from region provider if interface extended
+            Rectangle worldArea = region.ToWorldPixels(tileSize);
+            Vector2 position = GetRandomPositionInRegion(worldArea);
 
             var wood = World.CreateEntity("Wood");
             wood.AddComponent(new TransformComponent(position));
@@ -123,14 +126,17 @@ namespace CubeSurvivor.Systems.World
 
         private void SpawnGold(RegionDefinition region)
         {
-            Vector2 position = GetRandomPositionInRegion(region.Area);
+            // Convert region area from tile coordinates to world pixels
+            int tileSize = _regionProvider.GetTileSize();
+            Rectangle worldArea = region.ToWorldPixels(tileSize);
+            Vector2 position = GetRandomPositionInRegion(worldArea);
 
             var gold = World.CreateEntity("Gold");
             gold.AddComponent(new TransformComponent(position));
             
-            // Gold as a golden yellow pickup
-            gold.AddComponent(new SpriteComponent(new Color(255, 215, 0), 28, 28, RenderLayer.GroundItems));
-            gold.AddComponent(new ColliderComponent(28, 28, ColliderTag.Pickup));
+            // Gold as a golden yellow pickup - TUDO 32x32
+            gold.AddComponent(new SpriteComponent(new Color(255, 215, 0), 32, 32, RenderLayer.GroundItems));
+            gold.AddComponent(new ColliderComponent(32, 32, ColliderTag.Pickup));
             
             var goldItem = new Inventory.Items.Resources.GoldItem();
             gold.AddComponent(new PickupComponent(goldItem, quantity: _random.Next(1, 3)));
@@ -138,6 +144,10 @@ namespace CubeSurvivor.Systems.World
 
         private int CountResourcesInRegion(RegionDefinition region, RegionType regionType)
         {
+            // Convert region area from tile coordinates to world pixels for counting
+            int tileSize = _regionProvider.GetTileSize();
+            Rectangle worldArea = region.ToWorldPixels(tileSize);
+            
             int count = 0;
             
             // Determine what item ID to look for based on region type
@@ -158,8 +168,8 @@ namespace CubeSurvivor.Systems.World
 
                 if (transform != null && pickup != null)
                 {
-                    // Check if entity is within region bounds
-                    if (region.Area.Contains(transform.Position))
+                    // Check if entity is within region bounds (worldArea is in pixels)
+                    if (worldArea.Contains(transform.Position))
                     {
                         if (pickup.Item != null && pickup.Item.Id == itemId)
                         {

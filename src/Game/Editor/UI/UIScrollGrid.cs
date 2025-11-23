@@ -111,14 +111,16 @@ namespace CubeSurvivor.Game.Editor.UI
                 // Label (small text below)
                 if (font != null && !string.IsNullOrEmpty(item.Label))
                 {
-                    Vector2 textSize = font.MeasureString(item.Label);
+                    // Sanitize text to prevent SpriteFont crashes from unsupported Unicode characters
+                    string safeLabel = FontUtil.SanitizeForFont(font, item.Label);
+                    Vector2 textSize = font.MeasureString(safeLabel);
                     Vector2 textPos = new Vector2(
                         itemX + (ItemSize - textSize.X) / 2,
                         itemY + ItemSize + 2
                     );
                     if (textPos.Y >= globalBounds.Y && textPos.Y < globalBounds.Bottom)
                     {
-                        spriteBatch.DrawString(font, item.Label, textPos, Color.White);
+                        spriteBatch.DrawString(font, safeLabel, textPos, Color.White);
                     }
                 }
             }

@@ -27,6 +27,11 @@ namespace CubeSurvivor.Systems.Core
         /// Gets all regions (of any type).
         /// </summary>
         IEnumerable<RegionDefinition> GetAllRegions();
+
+        /// <summary>
+        /// Gets the tile size in pixels for converting tile coordinates to world pixels.
+        /// </summary>
+        int GetTileSize();
     }
 }
 

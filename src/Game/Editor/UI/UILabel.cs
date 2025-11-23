@@ -18,8 +18,11 @@ namespace CubeSurvivor.Game.Editor.UI
         {
             if (!Visible || font == null || string.IsNullOrEmpty(Text)) return;
 
+            // Sanitize text to prevent SpriteFont crashes from unsupported Unicode characters
+            string safeText = FontUtil.SanitizeForFont(font, Text);
+            
             Rectangle globalBounds = GlobalBounds;
-            Vector2 textSize = font.MeasureString(Text);
+            Vector2 textSize = font.MeasureString(safeText);
 
             float x = globalBounds.X;
             float y = globalBounds.Y;
@@ -34,7 +37,7 @@ namespace CubeSurvivor.Game.Editor.UI
                 y = globalBounds.Y + (globalBounds.Height - textSize.Y) / 2;
             }
 
-            spriteBatch.DrawString(font, Text, new Vector2(x, y), TextColor);
+            spriteBatch.DrawString(font, safeText, new Vector2(x, y), TextColor);
         }
     }
 }

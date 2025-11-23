@@ -79,7 +79,7 @@ namespace CubeSurvivor.Systems.Core
         }
 
         private void SpawnEnemy(System.Collections.Generic.List<RegionDefinition> spawnRegions)
-        {
+                {
             // Pick a random spawn region
             var region = spawnRegions[_random.Next(spawnRegions.Count)];
 
@@ -87,9 +87,20 @@ namespace CubeSurvivor.Systems.Core
             const int maxAttempts = 10;
             Vector2? spawnPosition = null;
 
+            // Convert region area from tile coordinates to world pixels
+            int tileSize = _regionProvider.GetTileSize();
+            Rectangle worldArea = region.ToWorldPixels(tileSize);
+            
+            // Clamp to valid map bounds
+            worldArea.X = Math.Max(0, worldArea.X);
+            worldArea.Y = Math.Max(0, worldArea.Y);
+            
+            // Clamp to valid map bounds (if we had access to map bounds)
+            // For now, just use the converted area
+            
             for (int i = 0; i < maxAttempts; i++)
             {
-                Vector2 pos = GetRandomPositionInRegion(region.Area);
+                Vector2 pos = GetRandomPositionInRegion(worldArea);
 
                 // Check biome restrictions
                 if (_biomeSystem != null && !_biomeSystem.AllowsEnemySpawnsAt(pos))
@@ -104,7 +115,7 @@ namespace CubeSurvivor.Systems.Core
                     
                     if (inExclusion)
                         continue;
-                }
+            }
 
                 spawnPosition = pos;
                 break;
@@ -160,7 +171,7 @@ namespace CubeSurvivor.Systems.Core
         }
 
         private int CalculateMaxEnemies(System.Collections.Generic.List<RegionDefinition> regions, bool playerInCave)
-        {
+                {
             int total = 50; // Default
 
             // Sum max enemies from all regions that define it
@@ -169,7 +180,7 @@ namespace CubeSurvivor.Systems.Core
                 if (region.Meta.TryGetValue("maxEnemies", out string maxStr))
                 {
                     if (int.TryParse(maxStr, out int max))
-                    {
+                {
                         total = Math.Max(total, max);
                     }
                 }
@@ -186,6 +197,7 @@ namespace CubeSurvivor.Systems.Core
 
         private Vector2 GetRandomPositionInRegion(Rectangle area)
         {
+            // Area is already in world pixels (converted from tile coordinates)
             float x = area.X + (float)_random.NextDouble() * area.Width;
             float y = area.Y + (float)_random.NextDouble() * area.Height;
             return new Vector2(x, y);

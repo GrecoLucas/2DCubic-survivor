@@ -96,8 +96,18 @@ namespace CubeSurvivor.Game.Map
             var doc = System.Text.Json.JsonDocument.Parse(json);
             var root = doc.RootElement;
 
-            int tileSize = root.TryGetProperty("TileSize", out var ts) ? ts.GetInt32() : 128;
-            int chunkSize = root.TryGetProperty("ChunkSize", out var cs) ? cs.GetInt32() : 64;
+            // Try both camelCase and PascalCase (MapSaver uses camelCase)
+            int tileSize = 32; // Default to player size
+            if (root.TryGetProperty("tileSize", out var ts1))
+                tileSize = ts1.GetInt32();
+            else if (root.TryGetProperty("TileSize", out var ts2))
+                tileSize = ts2.GetInt32();
+            
+            int chunkSize = 64; // Default
+            if (root.TryGetProperty("chunkSize", out var cs1))
+                chunkSize = cs1.GetInt32();
+            else if (root.TryGetProperty("ChunkSize", out var cs2))
+                chunkSize = cs2.GetInt32();
 
             return new MapInfo
             {
@@ -147,7 +157,7 @@ namespace CubeSurvivor.Game.Map
         {
             Console.WriteLine("[MapRegistry] Creating default starter map...");
             
-            var mapDef = MapLoader.CreateDefaultMap(256, 256, 128, 64);
+            var mapDef = MapLoader.CreateDefaultMap(256, 256, 32, 64); // Use player size (32px)
             string path = Path.Combine(folder, "starter_map.json");
             
             MapSaver.Save(path, mapDef);

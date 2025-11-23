@@ -24,14 +24,15 @@ namespace CubeSurvivor.Entities
 
             gold.AddComponent(new TransformComponent(position));
 
+            // TUDO 32x32
             Texture2D goldTexture = _textureManager?.GetTexture("gold");
             if (goldTexture != null)
             {
-                gold.AddComponent(new SpriteComponent(goldTexture, 18f, 18f, null, RenderLayer.GroundItems));
+                gold.AddComponent(new SpriteComponent(goldTexture, 32f, 32f, null, RenderLayer.GroundItems));
             }
             else
             {
-                gold.AddComponent(new SpriteComponent(new Color(255, 215, 0), 18f, 18f, RenderLayer.GroundItems)); // Gold color
+                gold.AddComponent(new SpriteComponent(new Color(255, 215, 0), 32f, 32f, RenderLayer.GroundItems)); // Gold color
             }
 
             var goldItem = new GoldItem();
@@ -41,7 +42,7 @@ namespace CubeSurvivor.Entities
             }
             gold.AddComponent(new PickupComponent(goldItem, quantity: quantity, pickupRadius: 50f));
 
-            gold.AddComponent(new ColliderComponent(18f, 18f, ColliderTag.Default));
+            gold.AddComponent(new ColliderComponent(32f, 32f, ColliderTag.Default));
 
             return gold;
         }

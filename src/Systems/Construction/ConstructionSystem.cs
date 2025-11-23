@@ -105,8 +105,8 @@ namespace CubeSurvivor.Systems
                 return;
             }
 
-            // 7. Construir caixa (destrutível)
-            _worldObjectFactory.CreateCrate(World, snappedPos, isDestructible: true, maxHealth: 50f);
+            // 7. Construir caixa (destrutível) - usar tamanho do player/tile (50px)
+            _worldObjectFactory.CreateCrate(World, snappedPos, GameConfig.PlayerSize, GameConfig.PlayerSize, isDestructible: true, maxHealth: 50f);
             System.Console.WriteLine($"[Construction] ✓ Caixa construída em ({snappedPos.X}, {snappedPos.Y})!");
         }
 

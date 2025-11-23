@@ -57,16 +57,29 @@ namespace CubeSurvivor.Systems.Rendering
                 transformMatrix: cameraTransform
             );
 
-            // Draw all tile layers first (background)
+            // CORRECT RENDER ORDER:
+            // 1. Tile layers (ground)
             for (int layerIndex = 0; layerIndex < _map.Definition.TileLayers.Count; layerIndex++)
             {
                 DrawTileLayer(visibleWorldRect, layerIndex);
             }
 
-            // Draw all block layers on top
+            // 2. ItemsLow layer (items below blocks)
+            if (_map.Definition.ItemLayers.Count > 0)
+            {
+                DrawItemLayer(visibleWorldRect, 0); // ItemsLow
+            }
+
+            // 3. Block layers (collision obstacles)
             for (int layerIndex = 0; layerIndex < _map.Definition.BlockLayers.Count; layerIndex++)
             {
                 DrawBlockLayer(visibleWorldRect, layerIndex);
+            }
+
+            // 4. ItemsHigh layer (items above blocks)
+            if (_map.Definition.ItemLayers.Count > 1)
+            {
+                DrawItemLayer(visibleWorldRect, 1); // ItemsHigh
             }
 
             _spriteBatch.End();
@@ -95,11 +108,64 @@ namespace CubeSurvivor.Systems.Rendering
                         int worldX = chunkWorldX + lx * _map.TileSize;
                         int worldY = chunkWorldY + ly * _map.TileSize;
 
-                        // For now, draw tiles as colored rectangles
-                        // TODO: Replace with actual tile sprite rendering from tileset
-                        Color tileColor = GetTileColor(tileId);
+                        // Try to get texture first, fallback to color
                         Rectangle destRect = new Rectangle(worldX, worldY, _map.TileSize, _map.TileSize);
-                        _spriteBatch.Draw(_pixelTexture, destRect, tileColor);
+                        Texture2D tileTexture = GetTileTexture(tileId);
+                        
+                        if (tileTexture != null)
+                        {
+                            _spriteBatch.Draw(tileTexture, destRect, Color.White);
+                        }
+                        else
+                        {
+                            Color tileColor = GetTileColor(tileId);
+                            _spriteBatch.Draw(_pixelTexture, destRect, tileColor);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void DrawItemLayer(Rectangle visibleWorldRect, int layerIndex)
+        {
+            if (layerIndex < 0 || layerIndex >= _map.Definition.ItemLayers.Count)
+                return;
+
+            var layer = _map.Definition.ItemLayers[layerIndex];
+
+            foreach (var (chunkCoord, chunkData) in _map.GetVisibleItemChunks(visibleWorldRect, layerIndex))
+            {
+                // Calculate chunk world position
+                int chunkWorldX = chunkCoord.X * _map.ChunkSize * _map.TileSize;
+                int chunkWorldY = chunkCoord.Y * _map.ChunkSize * _map.TileSize;
+
+                // Draw each item in the chunk
+                for (int ly = 0; ly < _map.ChunkSize; ly++)
+                {
+                    for (int lx = 0; lx < _map.ChunkSize; lx++)
+                    {
+                        ItemType itemType = chunkData.Items[lx, ly];
+                        if (itemType == ItemType.Empty)
+                            continue; // Skip empty items
+
+                        // Calculate world position for this item (center in tile)
+                        int worldX = chunkWorldX + lx * _map.TileSize;
+                        int worldY = chunkWorldY + ly * _map.TileSize;
+                        int itemSize = _map.TileSize; // Items are same size as tiles
+
+                        // Try to get texture first, fallback to color
+                        Rectangle destRect = new Rectangle(worldX, worldY, itemSize, itemSize);
+                        Texture2D itemTexture = GetItemTexture(itemType);
+                        
+                        if (itemTexture != null)
+                        {
+                            _spriteBatch.Draw(itemTexture, destRect, Color.White);
+                        }
+                        else
+                        {
+                            Color itemColor = GetItemColor(itemType);
+                            _spriteBatch.Draw(_pixelTexture, destRect, itemColor);
+                        }
                     }
                 }
             }
@@ -128,13 +194,21 @@ namespace CubeSurvivor.Systems.Rendering
                         int worldX = chunkWorldX + lx * _map.TileSize;
                         int worldY = chunkWorldY + ly * _map.TileSize;
 
-                        // Draw block as colored rectangle
-                        Color blockColor = GetBlockColor(blockType);
+                        // Try to get texture first, fallback to color
                         Rectangle destRect = new Rectangle(worldX, worldY, _map.TileSize, _map.TileSize);
-                        _spriteBatch.Draw(_pixelTexture, destRect, blockColor);
-
-                        // Add a darker border for better visibility
-                        DrawBorder(destRect, blockColor * 0.7f);
+                        Texture2D blockTexture = GetBlockTexture(blockType);
+                        
+                        if (blockTexture != null)
+                        {
+                            _spriteBatch.Draw(blockTexture, destRect, Color.White);
+                        }
+                        else
+                        {
+                            Color blockColor = GetBlockColor(blockType);
+                            _spriteBatch.Draw(_pixelTexture, destRect, blockColor);
+                            // Add a darker border for better visibility
+                            DrawBorder(destRect, blockColor * 0.7f);
+                        }
                     }
                 }
             }
@@ -166,17 +240,94 @@ namespace CubeSurvivor.Systems.Rendering
             };
         }
 
+        private Texture2D GetTileTexture(int tileId)
+        {
+            // Try to get texture by tile ID name
+            string textureKey = tileId switch
+            {
+                1 => "grass",      // Grass tile
+                2 => "dirt",       // Dirt tile
+                3 => "stone",      // Stone tile
+                4 => "floor",      // Floor tile
+                _ => null
+            };
+            
+            if (textureKey != null)
+            {
+                return _textureManager?.GetTexture(textureKey);
+            }
+            
+            return null;
+        }
+
         private Color GetTileColor(int tileId)
         {
-            // Simple color mapping for now
-            // TODO: Replace with actual tileset texture atlas
+            // Fallback color mapping when texture is not available
             return tileId switch
             {
                 1 => new Color(34, 139, 34),    // Grass green
                 2 => new Color(139, 90, 43),    // Dirt brown
                 3 => new Color(128, 128, 128),  // Stone gray
+                4 => new Color(200, 200, 200),  // Floor light gray
                 _ => new Color(50, 50, 50)      // Default dark
             };
+        }
+
+        private Texture2D GetItemTexture(ItemType itemType)
+        {
+            // Try to get texture by item type name
+            string textureKey = itemType switch
+            {
+                ItemType.Hammer => "hammer",
+                ItemType.Apple => "apple",
+                ItemType.WoodPickup => "wood",
+                ItemType.GoldPickup => "gold",
+                ItemType.Brain => "brain",
+                ItemType.Gun => "gun",
+                _ => null
+            };
+            
+            if (textureKey != null)
+            {
+                return _textureManager?.GetTexture(textureKey);
+            }
+            
+            return null;
+        }
+
+        private Color GetItemColor(ItemType itemType)
+        {
+            // Fallback color mapping when texture is not available
+            return itemType switch
+            {
+                ItemType.Hammer => new Color(139, 69, 19),    // Brown
+                ItemType.Apple => new Color(255, 0, 0),       // Red
+                ItemType.WoodPickup => new Color(160, 82, 45), // Sienna
+                ItemType.GoldPickup => new Color(255, 215, 0), // Gold
+                ItemType.Brain => new Color(255, 192, 203),    // Pink
+                ItemType.Gun => new Color(105, 105, 105),      // Dim gray
+                _ => Color.White
+            };
+        }
+
+        private Texture2D GetBlockTexture(BlockType blockType)
+        {
+            // Try to get texture by block type name
+            string textureKey = blockType switch
+            {
+                BlockType.Wall => "wall",
+                BlockType.Crate => "crate",
+                BlockType.Tree => "tree",
+                BlockType.Rock => "rock",
+                _ => null
+            };
+            
+            if (textureKey != null)
+            {
+                return _textureManager?.GetTexture(textureKey);
+            }
+            
+            return null;
         }
 
         private Rectangle CalculateVisibleWorldRect(Matrix cameraTransform)

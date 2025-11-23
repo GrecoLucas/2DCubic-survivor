@@ -68,14 +68,15 @@ namespace CubeSurvivor.Entities
 
             gold.AddComponent(new TransformComponent(position));
 
+            // TUDO 32x32
             Texture2D goldTexture = _textureManager?.GetTexture("gold");
             if (goldTexture != null)
             {
-                gold.AddComponent(new SpriteComponent(goldTexture, new Vector2(20f, 20f), null, RenderLayer.GroundItems));
+                gold.AddComponent(new SpriteComponent(goldTexture, new Vector2(32f, 32f), null, RenderLayer.GroundItems));
             }
             else
             {
-                gold.AddComponent(new SpriteComponent(Color.Gold, 20f, 20f, RenderLayer.GroundItems));
+                gold.AddComponent(new SpriteComponent(Color.Gold, 32f, 32f, RenderLayer.GroundItems));
             }
 
             var goldItem = new GoldItem();
@@ -85,7 +86,7 @@ namespace CubeSurvivor.Entities
             }
 
             gold.AddComponent(new PickupComponent(goldItem, quantity: 1, pickupRadius: 50f));
-            gold.AddComponent(new ColliderComponent(20f, 20f, ColliderTag.Default));
+            gold.AddComponent(new ColliderComponent(32f, 32f, ColliderTag.Default));
 
             return gold;
         }
@@ -96,14 +97,15 @@ namespace CubeSurvivor.Entities
 
             apple.AddComponent(new TransformComponent(position));
 
+            // TUDO 32x32
             Texture2D appleTexture = _textureManager?.GetTexture("apple");
             if (appleTexture != null)
             {
-                apple.AddComponent(new SpriteComponent(appleTexture, new Vector2(20f, 20f), null, RenderLayer.GroundItems));
+                apple.AddComponent(new SpriteComponent(appleTexture, new Vector2(32f, 32f), null, RenderLayer.GroundItems));
             }
             else
             {
-                apple.AddComponent(new SpriteComponent(Color.Red, 20f, 20f, RenderLayer.GroundItems));
+                apple.AddComponent(new SpriteComponent(Color.Red, 32f, 32f, RenderLayer.GroundItems));
             }
 
             var appleItem = new Inventory.Items.Consumables.AppleItem();
@@ -113,7 +115,7 @@ namespace CubeSurvivor.Entities
             }
 
             apple.AddComponent(new PickupComponent(appleItem, quantity: 1, pickupRadius: 50f));
-            apple.AddComponent(new ColliderComponent(20f, 20f, ColliderTag.Default));
+            apple.AddComponent(new ColliderComponent(32f, 32f, ColliderTag.Default));
 
             return apple;
         }
@@ -124,14 +126,15 @@ namespace CubeSurvivor.Entities
 
             brain.AddComponent(new TransformComponent(position));
 
+            // TUDO 32x32
             Texture2D brainTexture = _textureManager?.GetTexture("brain");
             if (brainTexture != null)
             {
-                brain.AddComponent(new SpriteComponent(brainTexture, new Vector2(24f, 24f), null, RenderLayer.GroundItems));
+                brain.AddComponent(new SpriteComponent(brainTexture, new Vector2(32f, 32f), null, RenderLayer.GroundItems));
             }
             else
             {
-                brain.AddComponent(new SpriteComponent(Color.Pink, 24f, 24f, RenderLayer.GroundItems));
+                brain.AddComponent(new SpriteComponent(Color.Pink, 32f, 32f, RenderLayer.GroundItems));
             }
 
             var brainItem = new Inventory.Items.Consumables.BrainItem();
@@ -141,7 +144,7 @@ namespace CubeSurvivor.Entities
             }
 
             brain.AddComponent(new PickupComponent(brainItem, quantity: 1, pickupRadius: 50f));
-            brain.AddComponent(new ColliderComponent(24f, 24f, ColliderTag.Default));
+            brain.AddComponent(new ColliderComponent(32f, 32f, ColliderTag.Default));
 
             return brain;
         }

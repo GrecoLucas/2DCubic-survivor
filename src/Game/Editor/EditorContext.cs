@@ -14,11 +14,48 @@ namespace CubeSurvivor.Game.Editor
         // Active tool
         public ToolType ActiveTool { get; set; } = ToolType.Brush;
 
-        // Edit mode (tiles vs blocks)
+        // Edit mode (tiles vs blocks vs items) - DEPRECATED, use ActiveLayerKind instead
         public EditMode EditMode { get; set; } = EditMode.Tiles;
 
-        // Active layer
-        public int ActiveLayerIndex { get; set; } = 0;
+        // NEW: Layer-aware editing
+        public EditableLayerKind ActiveLayerKind { get; set; } = EditableLayerKind.Tiles;
+        public int ActiveTileLayerIndex { get; set; } = 0;
+        public int ActiveBlockLayerIndex { get; set; } = 0;
+        // ItemsLow = ItemLayers[0], ItemsHigh = ItemLayers[1] (no index needed)
+
+        // Legacy: Active layer index (for backward compatibility)
+        public int ActiveLayerIndex 
+        { 
+            get 
+            {
+                return ActiveLayerKind switch
+                {
+                    EditableLayerKind.Tiles => ActiveTileLayerIndex,
+                    EditableLayerKind.Blocks => ActiveBlockLayerIndex,
+                    _ => 0
+                };
+            }
+            set
+            {
+                switch (ActiveLayerKind)
+                {
+                    case EditableLayerKind.Tiles:
+                        ActiveTileLayerIndex = value;
+                        break;
+                    case EditableLayerKind.Blocks:
+                        ActiveBlockLayerIndex = value;
+                        break;
+                }
+            }
+        }
+
+        // Layer visibility toggles
+        public bool[] TileLayerVisible { get; set; } = new bool[0];
+        public bool[] BlockLayerVisible { get; set; } = new bool[0];
+        public bool[] ItemLayerVisible { get; set; } = new bool[2] { true, true }; // ItemsLow, ItemsHigh
+
+        // Overlay mode: show all layers with alpha
+        public bool ShowAllLayersOverlay { get; set; } = false;
 
         // Active brush (tile ID or block type)
         public int ActiveBrushId { get; set; } = 1; // Default: Grass
@@ -39,6 +76,9 @@ namespace CubeSurvivor.Game.Editor
 
         // Camera reference (set by EditorState)
         public EditorCameraController Camera { get; set; }
+        
+        // Texture manager reference (set by EditorState)
+        public Core.TextureManager TextureManager { get; set; }
 
         // ============================================================
         // COORDINATE CONVERSION HELPERS
@@ -106,6 +146,29 @@ namespace CubeSurvivor.Game.Editor
                 EditorLogger.LogWarning("Regions", $"Failed to delete region '{id}' (not found)");
             }
         }
+
+        /// <summary>
+        /// Adds a region, ensuring only one PlayerSpawn exists.
+        /// If adding a PlayerSpawn, removes any existing PlayerSpawn regions.
+        /// </summary>
+        public void AddRegion(RegionDefinition region)
+        {
+            if (MapDefinition == null) return;
+
+            // If this is a PlayerSpawn, remove all existing PlayerSpawn regions first
+            if (region.Type == RegionType.PlayerSpawn)
+            {
+                int removed = MapDefinition.Regions.RemoveAll(r => r.Type == RegionType.PlayerSpawn);
+                if (removed > 0)
+                {
+                    EditorLogger.Log("Regions", $"Removed {removed} existing PlayerSpawn region(s) before adding new one");
+                }
+            }
+
+            MapDefinition.Regions.Add(region);
+            IsDirty = true;
+            EditorLogger.Log("Regions", $"Added region '{region.Id}' (Type={region.Type})");
+        }
     }
 
     public enum ToolType
@@ -123,6 +186,17 @@ namespace CubeSurvivor.Game.Editor
     {
         Tiles,
         Blocks
+    }
+
+    /// <summary>
+    /// Types of layers that can be edited in the editor.
+    /// </summary>
+    public enum EditableLayerKind
+    {
+        Tiles,      // Edit TileLayers
+        ItemsLow,   // Edit ItemLayers[0]
+        Blocks,     // Edit BlockLayers
+        ItemsHigh   // Edit ItemLayers[1]
     }
 }
 

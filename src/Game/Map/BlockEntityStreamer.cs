@@ -142,7 +142,7 @@ namespace CubeSurvivor.Game.Map
             Entity entity = blockType switch
             {
                 BlockType.Wall => _factory.CreateWall(_world, centerPos, _map.TileSize, _map.TileSize),
-                BlockType.Crate => _factory.CreateCrate(_world, centerPos, isDestructible: true, maxHealth: 100f),
+                BlockType.Crate => _factory.CreateCrate(_world, centerPos, _map.TileSize, _map.TileSize, isDestructible: true, maxHealth: 100f),
                 BlockType.Tree => CreateTree(centerPos),
                 BlockType.Rock => _factory.CreateRock(_world, centerPos, _map.TileSize),
                 _ => null
@@ -152,6 +152,9 @@ namespace CubeSurvivor.Game.Map
             {
                 var key = (layerIndex, tx, ty);
                 _spawnedBlocks[key] = entity;
+                
+                // Add MapBlockComponent so we can remove it from map when destroyed
+                entity.AddComponent(new Components.MapBlockComponent(tx, ty, layerIndex));
             }
         }
 

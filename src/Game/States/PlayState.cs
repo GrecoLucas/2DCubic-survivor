@@ -97,12 +97,171 @@ namespace CubeSurvivor.Game.States
             // Spawn player
             SpawnPlayer();
             
+            // Spawn placed items from map (backward compatibility)
+            SpawnPlacedItems();
+            
+            // Spawn items from ItemLayers
+            SpawnItemsFromItemLayers();
+            
             // Initialize pause menu
             InitializePauseMenu();
             
             _previousKeyboardState = Keyboard.GetState();
             
             Console.WriteLine("[PlayState] Play state initialized successfully");
+        }
+
+        private void SpawnPlacedItems()
+        {
+            if (_chunkedMap?.Definition?.PlacedItems == null) return;
+
+            foreach (var placedItem in _chunkedMap.Definition.PlacedItems)
+            {
+                // Convert tile coordinates to world position
+                Vector2 worldPos = new Vector2(
+                    placedItem.Tile.X * _chunkedMap.TileSize + _chunkedMap.TileSize / 2f,
+                    placedItem.Tile.Y * _chunkedMap.TileSize + _chunkedMap.TileSize / 2f
+                );
+
+                // Spawn item based on ItemId
+                SpawnPlacedItem(placedItem, worldPos);
+            }
+
+            Console.WriteLine($"[PlayState] Spawned {_chunkedMap.Definition.PlacedItems.Count} placed items");
+        }
+
+        private void SpawnItemsFromItemLayers()
+        {
+            if (_chunkedMap?.Definition?.ItemLayers == null) return;
+
+            int totalSpawned = 0;
+
+            // Spawn from both item layers (ItemsLow and ItemsHigh)
+            for (int layerIndex = 0; layerIndex < _chunkedMap.Definition.ItemLayers.Count; layerIndex++)
+            {
+                var layer = _chunkedMap.Definition.ItemLayers[layerIndex];
+                
+                // Iterate through all chunks in this layer
+                foreach (var chunkKvp in layer.Chunks)
+                {
+                    var chunkData = chunkKvp.Value;
+                    if (chunkData?.Items == null) continue;
+
+                    // Parse chunk coordinate from key (format: "cx,cy")
+                    var parts = chunkKvp.Key.Split(',');
+                    if (parts.Length != 2) continue;
+                    if (!int.TryParse(parts[0], out int cx) || !int.TryParse(parts[1], out int cy))
+                        continue;
+
+                    // Calculate chunk world position
+                    int chunkWorldX = cx * _chunkedMap.ChunkSize * _chunkedMap.TileSize;
+                    int chunkWorldY = cy * _chunkedMap.ChunkSize * _chunkedMap.TileSize;
+
+                    // Iterate through items in chunk
+                    for (int ly = 0; ly < _chunkedMap.ChunkSize; ly++)
+                    {
+                        for (int lx = 0; lx < _chunkedMap.ChunkSize; lx++)
+                        {
+                            ItemType itemType = chunkData.Items[lx, ly];
+                            if (itemType == ItemType.Empty)
+                                continue;
+
+                            // Calculate world position (center of tile)
+                            int worldX = chunkWorldX + lx * _chunkedMap.TileSize;
+                            int worldY = chunkWorldY + ly * _chunkedMap.TileSize;
+                            Vector2 worldPos = new Vector2(
+                                worldX + _chunkedMap.TileSize / 2f,
+                                worldY + _chunkedMap.TileSize / 2f
+                            );
+
+                            // Spawn item entity with ItemLayerSourceComponent to track its origin
+                            SpawnItemFromType(itemType, worldPos, layerIndex, lx + cx * _chunkedMap.ChunkSize, ly + cy * _chunkedMap.ChunkSize);
+                            totalSpawned++;
+                        }
+                    }
+                }
+            }
+
+            Console.WriteLine($"[PlayState] Spawned {totalSpawned} items from ItemLayers");
+        }
+
+        private void SpawnItemFromType(ItemType itemType, Vector2 worldPos, int layerIndex = -1, int tileX = -1, int tileY = -1)
+        {
+            Entity itemEntity = null;
+            
+            switch (itemType)
+            {
+                case ItemType.Hammer:
+                    var hammerFactory = new Entities.HammerEntityFactory();
+                    hammerFactory.SetTextureManager(_textureManager);
+                    itemEntity = hammerFactory.CreateHammer(_world, worldPos);
+                    break;
+                case ItemType.Apple:
+                    var appleFactory = new Entities.AppleEntityFactory();
+                    appleFactory.SetTextureManager(_textureManager);
+                    itemEntity = appleFactory.CreateApple(_world, worldPos);
+                    break;
+                case ItemType.WoodPickup:
+                    var woodFactory = new Entities.WoodEntityFactory();
+                    woodFactory.SetTextureManager(_textureManager);
+                    itemEntity = woodFactory.CreateWood(_world, worldPos);
+                    break;
+                case ItemType.GoldPickup:
+                    var goldFactory = new Entities.GoldEntityFactory();
+                    goldFactory.SetTextureManager(_textureManager);
+                    itemEntity = goldFactory.CreateGold(_world, worldPos, 1);
+                    break;
+                case ItemType.Brain:
+                    var brainFactory = new Entities.BrainEntityFactory();
+                    brainFactory.SetTextureManager(_textureManager);
+                    itemEntity = brainFactory.CreateBrain(_world, worldPos);
+                    break;
+                case ItemType.Gun:
+                    // Gun é uma arma, não um item de pickup normal - pode ficar como está ou implementar depois
+                    Console.WriteLine($"[PlayState] Gun item spawn not yet implemented");
+                    break;
+                default:
+                    Console.WriteLine($"[PlayState] Unknown item type: {itemType}");
+                    break;
+            }
+            
+            // If item came from ItemLayer, mark it so we can remove it from the layer when collected
+            if (itemEntity != null && layerIndex >= 0 && tileX >= 0 && tileY >= 0)
+            {
+                itemEntity.AddComponent(new Components.ItemLayerSourceComponent(layerIndex, tileX, tileY));
+            }
+        }
+
+        private void SpawnPlacedItem(PlacedItemDefinition placedItem, Vector2 worldPos)
+        {
+            // Use appropriate factory based on ItemId
+            // This is a simple implementation - can be extended with a factory registry
+            switch (placedItem.ItemId.ToLower())
+            {
+                case "hammer":
+                    var hammerFactory = new Entities.HammerEntityFactory();
+                    hammerFactory.SetTextureManager(_textureManager);
+                    hammerFactory.CreateHammer(_world, worldPos);
+                    break;
+                case "apple":
+                    var appleFactory = new Entities.AppleEntityFactory();
+                    appleFactory.SetTextureManager(_textureManager);
+                    appleFactory.CreateApple(_world, worldPos);
+                    break;
+                case "wood":
+                    var woodFactory = new Entities.WoodEntityFactory();
+                    woodFactory.SetTextureManager(_textureManager);
+                    woodFactory.CreateWood(_world, worldPos);
+                    break;
+                case "gold":
+                    var goldFactory = new Entities.GoldEntityFactory();
+                    goldFactory.SetTextureManager(_textureManager);
+                    goldFactory.CreateGold(_world, worldPos, placedItem.Amount);
+                    break;
+                default:
+                    Console.WriteLine($"[PlayState] Unknown item ID: {placedItem.ItemId}");
+                    break;
+            }
         }
 
         private void InitializePauseMenu()
@@ -274,8 +433,8 @@ namespace CubeSurvivor.Game.States
             _world.AddSystem(_inventoryInputSystem);
             _world.AddSystem(_inventoryDragDropSystem);
             
-            // (2) Pickup
-            _world.AddSystem(new PickupSystem());
+            // (2) Pickup (pass map so it can remove items from ItemLayers)
+            _world.AddSystem(new PickupSystem(_chunkedMap));
             
             // (3) Consumption
             _world.AddSystem(new ConsumptionSystem());
@@ -302,7 +461,9 @@ namespace CubeSurvivor.Game.States
             _world.AddSystem(new CollisionSystem(_spatialIndex));
             
             // (10) Death
-            _world.AddSystem(new DeathSystem(_textureManager));
+            var deathSystem = new DeathSystem(_textureManager);
+            deathSystem.SetBlockStreamer(_blockStreamer); // Allow death system to remove blocks from map
+            _world.AddSystem(deathSystem);
             
             // (11) Construction
             _world.AddSystem(new ConstructionSystem(_worldObjectFactory));
@@ -407,10 +568,12 @@ namespace CubeSurvivor.Game.States
             Vector2 spawnPosition;
             if (playerSpawnRegions.Count > 0)
             {
-                var spawnRegion = playerSpawnRegions[0].Area;
+                var spawnRegion = playerSpawnRegions[0];
+                // Convert tile coordinates to world pixels
+                Rectangle worldArea = spawnRegion.ToWorldPixels(_chunkedMap.TileSize);
                 spawnPosition = new Vector2(
-                    spawnRegion.Center.X,
-                    spawnRegion.Center.Y
+                    worldArea.Center.X,
+                    worldArea.Center.Y
                 );
             }
             else

@@ -14,9 +14,11 @@ namespace CubeSurvivor.Game.Editor.UI
     {
         private UIPanel _panel;
         private List<UIButton> _regionButtons = new List<UIButton>();
+        private EditorContext _context;
 
         public void Build(Rectangle bounds, EditorContext context)
         {
+            _context = context;
             _panel = new UIPanel
             {
                 Bounds = bounds,
@@ -115,24 +117,28 @@ namespace CubeSurvivor.Game.Editor.UI
         {
             _panel.Draw(spriteBatch, font, pixelTexture);
 
-            // Draw region labels manually (get actual data from context)
-            if (_panel.Visible && font != null && _panel.Children.Count > 0)
+            // Draw region labels with actual data from context
+            if (_panel.Visible && font != null && _context?.MapDefinition != null)
             {
-                var regions = new List<RegionDefinition>();
-                if (_panel.Children.Count > 0)
+                int index = 0;
+                foreach (var child in _panel.Children)
                 {
-                    // Get regions from context - they're in same order as panels
-                    int index = 0;
-                    foreach (var child in _panel.Children)
+                    if (child is UIPanel regionPanel && index < _context.MapDefinition.Regions.Count)
                     {
-                        if (child is UIPanel regionPanel)
-                        {
-                            // Match by index (not ideal but works)
-                            // TODO: Store region reference in panel
-                            string label = $"Region #{index + 1}";
-                            spriteBatch.DrawString(font, label, new Vector2(regionPanel.Bounds.X + 5, regionPanel.Bounds.Y + 35), Color.White);
-                            index++;
-                        }
+                        var region = _context.MapDefinition.Regions[index];
+                        Rectangle globalBounds = regionPanel.GlobalBounds;
+                        
+                        // Draw region type and ID (sanitized to prevent SpriteFont crashes)
+                        string label = $"{region.Type}: {region.Id}";
+                        string safeLabel = FontUtil.SanitizeForFont(font, label);
+                        spriteBatch.DrawString(font, safeLabel, new Vector2(globalBounds.X + 5, globalBounds.Y + 35), Color.White);
+                        
+                        // Draw area info (sanitized)
+                        string areaInfo = $"Area: {region.Area.X},{region.Area.Y} {region.Area.Width}x{region.Area.Height}";
+                        string safeAreaInfo = FontUtil.SanitizeForFont(font, areaInfo);
+                        spriteBatch.DrawString(font, safeAreaInfo, new Vector2(globalBounds.X + 5, globalBounds.Y + 50), Color.LightGray);
+                        
+                        index++;
                     }
                 }
             }

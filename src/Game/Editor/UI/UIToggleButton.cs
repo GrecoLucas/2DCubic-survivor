@@ -63,13 +63,15 @@ namespace CubeSurvivor.Game.Editor.UI
             // Text
             if (font != null && !string.IsNullOrEmpty(Text))
             {
-                Vector2 textSize = font.MeasureString(Text);
+                // Sanitize text to prevent SpriteFont crashes from unsupported Unicode characters
+                string safeText = FontUtil.SanitizeForFont(font, Text);
+                Vector2 textSize = font.MeasureString(safeText);
                 int textX = Icon != null ? globalBounds.X + 32 : globalBounds.X + (int)((globalBounds.Width - textSize.X) / 2);
                 Vector2 textPos = new Vector2(
                     textX,
                     globalBounds.Y + (globalBounds.Height - textSize.Y) / 2
                 );
-                spriteBatch.DrawString(font, Text, textPos, TextColor);
+                spriteBatch.DrawString(font, safeText, textPos, TextColor);
             }
 
             // Selected indicator (thick border)

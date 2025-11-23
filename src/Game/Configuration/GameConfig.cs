@@ -5,9 +5,9 @@ namespace CubeSurvivor
     /// </summary>
     public static class GameConfig
     {
-        // Configurações de tela
-        public const int ScreenWidth = 1080;
-        public const int ScreenHeight = 720;
+        // Configurações de tela (1920x1080 default)
+        public const int ScreenWidth = 1920;
+        public const int ScreenHeight = 1080;
 
         // Limites do mapa
         public const int MapWidth = 2000;
@@ -26,7 +26,7 @@ namespace CubeSurvivor
         // Configurações do jogador
         public const float PlayerMoveSpeed = 200f;
         public const float PlayerHealth = 100f;
-        public const float PlayerSize = 50f;
+        public const float PlayerSize = 32f;
 
         // Configurações de inimigos
         public const float EnemyMoveSpeed = 150f;

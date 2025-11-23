@@ -25,16 +25,16 @@ namespace CubeSurvivor.Entities
             // Transformação e visual
             apple.AddComponent(new TransformComponent(position));
             
-            // Usar textura se disponível, senão usar cor
+            // Usar textura se disponível, senão usar cor - TUDO 32x32
             // Itens no chão usam a camada GroundItems para renderizar abaixo de entidades
             Texture2D appleTexture = _textureManager?.GetTexture("apple");
             if (appleTexture != null)
             {
-                apple.AddComponent(new SpriteComponent(appleTexture, 20f, 20f, null, RenderLayer.GroundItems));
+                apple.AddComponent(new SpriteComponent(appleTexture, 32f, 32f, null, RenderLayer.GroundItems));
             }
             else
             {
-                apple.AddComponent(new SpriteComponent(Color.Red, 20f, 20f, RenderLayer.GroundItems));
+                apple.AddComponent(new SpriteComponent(Color.Red, 32f, 32f, RenderLayer.GroundItems));
             }
             
             // Componente de pickup
@@ -46,8 +46,8 @@ namespace CubeSurvivor.Entities
             }
             apple.AddComponent(new PickupComponent(appleItem, quantity: 1, pickupRadius: 50f));
             
-            // Collider para detecção de proximidade (opcional, mas útil)
-            apple.AddComponent(new ColliderComponent(20f, 20f, ColliderTag.Default));
+            // Collider para detecção de proximidade - 32x32
+            apple.AddComponent(new ColliderComponent(32f, 32f, ColliderTag.Default));
             
             return apple;
         }

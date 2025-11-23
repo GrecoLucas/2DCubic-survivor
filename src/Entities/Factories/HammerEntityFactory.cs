@@ -25,15 +25,15 @@ namespace CubeSurvivor.Entities
             // Transformação e visual
             hammer.AddComponent(new TransformComponent(position));
 
-            // Usar textura se disponível, senão usar cor
+            // Usar textura se disponível, senão usar cor - TUDO 32x32
             Texture2D hammerTexture = _textureManager?.GetTexture("hammer");
             if (hammerTexture != null)
             {
-                hammer.AddComponent(new SpriteComponent(hammerTexture, 22f, 22f, null, RenderLayer.GroundItems));
+                hammer.AddComponent(new SpriteComponent(hammerTexture, 32f, 32f, null, RenderLayer.GroundItems));
             }
             else
             {
-                hammer.AddComponent(new SpriteComponent(new Color(169, 169, 169), 22f, 22f, RenderLayer.GroundItems)); // Cor cinza
+                hammer.AddComponent(new SpriteComponent(new Color(169, 169, 169), 32f, 32f, RenderLayer.GroundItems)); // Cor cinza
             }
 
             // Componente de pickup
@@ -44,8 +44,8 @@ namespace CubeSurvivor.Entities
             }
             hammer.AddComponent(new PickupComponent(hammerItem, quantity: 1, pickupRadius: 50f));
 
-            // Collider para detecção de proximidade
-            hammer.AddComponent(new ColliderComponent(22f, 22f, ColliderTag.Default));
+            // Collider para detecção de proximidade - 32x32
+            hammer.AddComponent(new ColliderComponent(32f, 32f, ColliderTag.Default));
 
             return hammer;
         }

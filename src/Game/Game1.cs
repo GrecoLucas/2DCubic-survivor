@@ -167,7 +167,7 @@ namespace CubeSurvivor
                 if (mapDef == null)
                 {
                     Console.WriteLine("[Game1] Failed to load map, creating default");
-                    mapDef = MapLoader.CreateDefaultMap(256, 256, 128, 64);
+                    mapDef = MapLoader.CreateDefaultMap(256, 256, 32, 64); // Use player size (32px)
                     MapSaver.Save(mapPath, mapDef);
                 }
                 

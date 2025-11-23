@@ -86,11 +86,16 @@ namespace CubeSurvivor.Game.Editor.UI
                 );
 
                 // Only update if visible (check GlobalBounds against our GlobalBounds)
+                // This ensures items outside viewport don't process input
                 Rectangle itemGlobal = item.GlobalBounds;
                 Rectangle ourGlobal = GlobalBounds;
                 
-                if (itemGlobal.Bottom >= ourGlobal.Y && itemGlobal.Y <= ourGlobal.Bottom)
+                // Check if item intersects with visible area (with some padding for hover detection)
+                bool isVisible = itemGlobal.Bottom >= ourGlobal.Y && itemGlobal.Y <= ourGlobal.Bottom;
+                
+                if (isVisible)
                 {
+                    // Update item - it will use GlobalBounds for hit test
                     item.Update(gameTime, mouseState, previousMouseState);
                 }
 

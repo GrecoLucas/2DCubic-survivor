@@ -29,7 +29,7 @@ namespace CubeSurvivor.Game.Editor.Tools
                 return;
             }
 
-            EditorLogger.Log("FloodFillTool", $"Mode={context.EditMode} Layer={context.ActiveLayerIndex} BrushId={context.ActiveBrushId}");
+            EditorLogger.Log("FloodFillTool", $"LayerKind={context.ActiveLayerKind} BrushId={context.ActiveBrushId}");
 
             int targetValue = GetValue(startTile, context);
             int replacementValue = context.ActiveBrushId;
@@ -78,25 +78,35 @@ namespace CubeSurvivor.Game.Editor.Tools
 
         private int GetValue(Point tile, EditorContext context)
         {
-            if (context.EditMode == EditMode.Tiles)
+            return context.ActiveLayerKind switch
             {
-                return context.Map.GetTileAt(tile.X, tile.Y, context.ActiveLayerIndex);
-            }
-            else
-            {
-                return (int)context.Map.GetBlockAtTile(tile.X, tile.Y, context.ActiveLayerIndex);
-            }
+                EditableLayerKind.Tiles => context.Map.GetTileAt(tile.X, tile.Y, context.ActiveTileLayerIndex),
+                EditableLayerKind.Blocks => (int)context.Map.GetBlockAtTile(tile.X, tile.Y, context.ActiveBlockLayerIndex),
+                EditableLayerKind.ItemsLow => (int)context.Map.GetItemAtTile(tile.X, tile.Y, 0),
+                EditableLayerKind.ItemsHigh => (int)context.Map.GetItemAtTile(tile.X, tile.Y, 1),
+                _ => 0
+            };
         }
 
         private void SetValue(Point tile, int value, EditorContext context)
         {
-            if (context.EditMode == EditMode.Tiles)
+            switch (context.ActiveLayerKind)
             {
-                context.Map.SetTileAt(tile.X, tile.Y, value, context.ActiveLayerIndex);
-            }
-            else
-            {
-                context.Map.SetBlockAtTile(tile.X, tile.Y, (BlockType)value, context.ActiveLayerIndex);
+                case EditableLayerKind.Tiles:
+                    context.Map.SetTileAt(tile.X, tile.Y, value, context.ActiveTileLayerIndex);
+                    break;
+
+                case EditableLayerKind.Blocks:
+                    context.Map.SetBlockAtTile(tile.X, tile.Y, (BlockType)value, context.ActiveBlockLayerIndex);
+                    break;
+
+                case EditableLayerKind.ItemsLow:
+                    context.Map.SetItemAtTile(tile.X, tile.Y, (ItemType)value, 0);
+                    break;
+
+                case EditableLayerKind.ItemsHigh:
+                    context.Map.SetItemAtTile(tile.X, tile.Y, (ItemType)value, 1);
+                    break;
             }
         }
 

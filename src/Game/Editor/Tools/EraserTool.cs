@@ -48,15 +48,28 @@ namespace CubeSurvivor.Game.Editor.Tools
                 return;
             }
 
-            if (context.EditMode == EditMode.Tiles)
+            // Use ActiveLayerKind to determine what to erase
+            switch (context.ActiveLayerKind)
             {
-                context.Map.SetTileAt(tilePos.X, tilePos.Y, 0, context.ActiveLayerIndex); // Empty
-                EditorLogger.Log("Erase", $"Tile erased: pos={tilePos} layer={context.ActiveLayerIndex}");
-            }
-            else
-            {
-                context.Map.SetBlockAtTile(tilePos.X, tilePos.Y, BlockType.Empty, context.ActiveLayerIndex);
-                EditorLogger.Log("Erase", $"Block erased: pos={tilePos} layer={context.ActiveLayerIndex}");
+                case EditableLayerKind.Tiles:
+                    context.Map.SetTileAt(tilePos.X, tilePos.Y, 0, context.ActiveTileLayerIndex); // Empty
+                    EditorLogger.Log("Erase", $"Tile erased: pos={tilePos} layer={context.ActiveTileLayerIndex}");
+                    break;
+
+                case EditableLayerKind.Blocks:
+                    context.Map.SetBlockAtTile(tilePos.X, tilePos.Y, BlockType.Empty, context.ActiveBlockLayerIndex);
+                    EditorLogger.Log("Erase", $"Block erased: pos={tilePos} layer={context.ActiveBlockLayerIndex}");
+                    break;
+
+                case EditableLayerKind.ItemsLow:
+                    context.Map.SetItemAtTile(tilePos.X, tilePos.Y, ItemType.Empty, 0);
+                    EditorLogger.Log("Erase", $"Item (Low) erased: pos={tilePos}");
+                    break;
+
+                case EditableLayerKind.ItemsHigh:
+                    context.Map.SetItemAtTile(tilePos.X, tilePos.Y, ItemType.Empty, 1);
+                    EditorLogger.Log("Erase", $"Item (High) erased: pos={tilePos}");
+                    break;
             }
 
             _lastErased = tilePos;

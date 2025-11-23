@@ -16,35 +16,47 @@ namespace CubeSurvivor.Game.Editor.Tools
 
         public void OnMouseDown(Point tilePos, MouseState mouseState, EditorContext context)
         {
-            _startWorld = tilePos.ToVector2() * (context.MapDefinition?.TileSizePx ?? 32);
+            // Store tile coordinates (not world pixels)
+            _startWorld = tilePos.ToVector2();
         }
 
         public void OnMouseDrag(Point tilePos, MouseState mouseState, EditorContext context)
         {
-            _currentWorld = tilePos.ToVector2() * (context.MapDefinition?.TileSizePx ?? 32);
+            // Store tile coordinates (not world pixels)
+            _currentWorld = tilePos.ToVector2();
         }
 
         public void OnMouseUp(Point tilePos, MouseState mouseState, EditorContext context)
         {
             if (_startWorld.HasValue && context.MapDefinition != null)
             {
-                Vector2 end = tilePos.ToVector2() * context.MapDefinition.TileSizePx;
-                Rectangle rect = GetRect(_startWorld.Value, end);
+                // Use tile coordinates directly (snap to tile grid)
+                Point startTile = new Point((int)_startWorld.Value.X, (int)_startWorld.Value.Y);
+                Point endTile = tilePos;
+                
+                // Snap to tile grid and create rectangle in tile coordinates
+                Rectangle tileRect = GetTileRect(startTile, endTile);
+                
+                // Clamp to map bounds
+                tileRect.X = Math.Max(0, Math.Min(tileRect.X, context.MapDefinition.MapWidth - 1));
+                tileRect.Y = Math.Max(0, Math.Min(tileRect.Y, context.MapDefinition.MapHeight - 1));
+                tileRect.Width = Math.Min(tileRect.Width, context.MapDefinition.MapWidth - tileRect.X);
+                tileRect.Height = Math.Min(tileRect.Height, context.MapDefinition.MapHeight - tileRect.Y);
 
-                if (rect.Width > 0 && rect.Height > 0)
+                if (tileRect.Width > 0 && tileRect.Height > 0)
                 {
-                    // Create new region
+                    // Create new region with tile coordinates
                     string id = $"{context.PendingRegionType}_{Guid.NewGuid().ToString().Substring(0, 8)}";
                     RegionDefinition region = new RegionDefinition
                     {
                         Id = id,
                         Type = context.PendingRegionType,
-                        Area = rect,
+                        Area = tileRect, // TILE COORDINATES, not pixels!
                         Meta = new System.Collections.Generic.Dictionary<string, string>(context.PendingRegionMeta)
                     };
 
-                    context.MapDefinition.Regions.Add(region);
-                    context.IsDirty = true;
+                    // Use context method to ensure only one PlayerSpawn
+                    context.AddRegion(region);
                 }
             }
 
@@ -54,9 +66,21 @@ namespace CubeSurvivor.Game.Editor.Tools
 
         public void Draw(SpriteBatch spriteBatch, Texture2D pixelTexture, SpriteFont font, EditorContext context, EditorCameraController camera, Rectangle canvasBounds)
         {
-            if (_startWorld.HasValue && _currentWorld.HasValue)
+            if (_startWorld.HasValue && _currentWorld.HasValue && context.MapDefinition != null)
             {
-                Rectangle worldRect = GetRect(_startWorld.Value, _currentWorld.Value);
+                // Convert tile coordinates to world pixels for drawing
+                int tileSize = context.MapDefinition.TileSize;
+                Point startTile = new Point((int)_startWorld.Value.X, (int)_startWorld.Value.Y);
+                Point endTile = new Point((int)_currentWorld.Value.X, (int)_currentWorld.Value.Y);
+                Rectangle tileRect = GetTileRect(startTile, endTile);
+                
+                // Convert to world pixels
+                Rectangle worldRect = new Rectangle(
+                    tileRect.X * tileSize,
+                    tileRect.Y * tileSize,
+                    tileRect.Width * tileSize,
+                    tileRect.Height * tileSize
+                );
 
                 Point screenTopLeft = camera.WorldToScreen(worldRect.Location.ToVector2(), canvasBounds);
                 Point screenBottomRight = camera.WorldToScreen(new Vector2(worldRect.Right, worldRect.Bottom), canvasBounds);
@@ -72,12 +96,12 @@ namespace CubeSurvivor.Game.Editor.Tools
             }
         }
 
-        private Rectangle GetRect(Vector2 a, Vector2 b)
+        private Rectangle GetTileRect(Point a, Point b)
         {
-            int minX = (int)Math.Min(a.X, b.X);
-            int minY = (int)Math.Min(a.Y, b.Y);
-            int maxX = (int)Math.Max(a.X, b.X);
-            int maxY = (int)Math.Max(a.Y, b.Y);
+            int minX = Math.Min(a.X, b.X);
+            int minY = Math.Min(a.Y, b.Y);
+            int maxX = Math.Max(a.X, b.X) + 1; // +1 because rectangle is exclusive on right/bottom
+            int maxY = Math.Max(a.Y, b.Y) + 1;
             return new Rectangle(minX, minY, maxX - minX, maxY - minY);
         }
 

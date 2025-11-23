@@ -1,5 +1,7 @@
+using System;
 using CubeSurvivor.Components;
 using CubeSurvivor.Core;
+using CubeSurvivor.Game.Map;
 using CubeSurvivor.Inventory.Components;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
@@ -11,14 +13,17 @@ namespace CubeSurvivor.Systems
     /// <summary>
     /// Sistema responsável por detectar e processar coleta de itens pelo jogador.
     /// O jogador pressiona E para coletar itens próximos.
+    /// Também remove itens das ItemLayers quando coletados.
     /// </summary>
     public sealed class PickupSystem : GameSystem
     {
         private KeyboardState _previousKeyboardState;
+        private readonly ChunkedTileMap _map;
         
-        public PickupSystem()
+        public PickupSystem(ChunkedTileMap map = null)
         {
             _previousKeyboardState = Keyboard.GetState();
+            _map = map;
         }
         
         public override void Update(GameTime gameTime)
@@ -71,7 +76,16 @@ namespace CubeSurvivor.Systems
                     
                     if (success)
                     {
-                        // Marcar item para remoção
+                        // Se o item veio de uma ItemLayer, remover da layer também
+                        var layerSource = entity.GetComponent<ItemLayerSourceComponent>();
+                        if (layerSource != null && _map != null)
+                        {
+                            // Remove item da ItemLayer correspondente
+                            _map.SetItemAtTile(layerSource.TileX, layerSource.TileY, ItemType.Empty, layerSource.LayerIndex);
+                            Console.WriteLine($"[PickupSystem] Removed item from ItemLayer[{layerSource.LayerIndex}] at tile ({layerSource.TileX}, {layerSource.TileY})");
+                        }
+                        
+                        // Marcar item para remoção do mundo
                         itemsToRemove.Add(entity);
                     }
                 }

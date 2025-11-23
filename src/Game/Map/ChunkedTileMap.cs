@@ -95,6 +95,97 @@ namespace CubeSurvivor.Game.Map
 
         #endregion
 
+        #region Item Operations
+
+        /// <summary>
+        /// Gets the item type at a specific tile coordinate.
+        /// </summary>
+        /// <param name="tx">Tile X coordinate.</param>
+        /// <param name="ty">Tile Y coordinate.</param>
+        /// <param name="layerIndex">Item layer index (0 = ItemsLow, 1 = ItemsHigh).</param>
+        /// <returns>The item type at that position, or Empty if out of bounds.</returns>
+        public ItemType GetItemAtTile(int tx, int ty, int layerIndex = 0)
+        {
+            if (!IsValidTileCoord(tx, ty) || layerIndex < 0 || layerIndex >= Definition.ItemLayers.Count)
+                return ItemType.Empty;
+
+            var layer = Definition.ItemLayers[layerIndex];
+            var (chunkCoord, localX, localY) = TileToChunkCoords(tx, ty);
+            string chunkKey = ChunkKeyToString(chunkCoord);
+
+            if (!layer.Chunks.TryGetValue(chunkKey, out var chunkData))
+                return ItemType.Empty;
+
+            if (chunkData?.Items == null)
+                return ItemType.Empty;
+
+            return chunkData.Items[localX, localY];
+        }
+
+        /// <summary>
+        /// Sets the item type at a specific tile coordinate.
+        /// Creates chunk if it doesn't exist.
+        /// </summary>
+        /// <param name="tx">Tile X coordinate.</param>
+        /// <param name="ty">Tile Y coordinate.</param>
+        /// <param name="type">Item type to set.</param>
+        /// <param name="layerIndex">Item layer index (0 = ItemsLow, 1 = ItemsHigh).</param>
+        public void SetItemAtTile(int tx, int ty, ItemType type, int layerIndex = 0)
+        {
+            if (!IsValidTileCoord(tx, ty) || layerIndex < 0 || layerIndex >= Definition.ItemLayers.Count)
+                return;
+
+            var layer = Definition.ItemLayers[layerIndex];
+            var (chunkCoord, localX, localY) = TileToChunkCoords(tx, ty);
+            string chunkKey = ChunkKeyToString(chunkCoord);
+
+            if (!layer.Chunks.TryGetValue(chunkKey, out var chunkData))
+            {
+                // Create new chunk
+                chunkData = new ChunkItemData
+                {
+                    Items = new ItemType[ChunkSize, ChunkSize]
+                };
+                layer.Chunks[chunkKey] = chunkData;
+            }
+
+            if (chunkData.Items == null)
+            {
+                chunkData.Items = new ItemType[ChunkSize, ChunkSize];
+            }
+
+            chunkData.Items[localX, localY] = type;
+        }
+
+        /// <summary>
+        /// Gets all items in a tile rectangle across both item layers.
+        /// </summary>
+        public IEnumerable<(int tx, int ty, ItemType itemType, int layerIndex)> GetItemsInTileRect(Rectangle tileRect, int layerIndex)
+        {
+            if (layerIndex < 0 || layerIndex >= Definition.ItemLayers.Count)
+                yield break;
+
+            var layer = Definition.ItemLayers[layerIndex];
+            int minTx = Math.Max(0, tileRect.X);
+            int maxTx = Math.Min(Definition.MapWidth - 1, tileRect.X + tileRect.Width - 1);
+            int minTy = Math.Max(0, tileRect.Y);
+            int maxTy = Math.Min(Definition.MapHeight - 1, tileRect.Y + tileRect.Height - 1);
+
+            for (int ty = minTy; ty <= maxTy; ty++)
+            {
+                for (int tx = minTx; tx <= maxTx; tx++)
+                {
+                    ItemType itemType = GetItemAtTile(tx, ty, layerIndex);
+                    if (itemType != ItemType.Empty)
+                    {
+                        yield return (tx, ty, itemType, layerIndex);
+                    }
+                }
+            }
+        }
+
+        #endregion
+
         #region Tile Operations
 
         /// <summary>
@@ -194,6 +285,46 @@ namespace CubeSurvivor.Game.Map
                     string chunkKey = ChunkKeyToString(chunkCoord);
 
                     if (layer.Chunks.TryGetValue(chunkKey, out var chunkData) && chunkData?.Tiles != null)
+                    {
+                        yield return (chunkCoord, chunkData);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets all visible item chunks within the camera view.
+        /// </summary>
+        /// <param name="worldView">World-space rectangle representing camera view.</param>
+        /// <param name="layerIndex">Item layer index (0 = ItemsLow, 1 = ItemsHigh).</param>
+        /// <returns>Enumerable of chunk coordinates and their data.</returns>
+        public IEnumerable<(Point chunkCoord, ChunkItemData data)> GetVisibleItemChunks(Rectangle worldView, int layerIndex = 0)
+        {
+            if (layerIndex < 0 || layerIndex >= Definition.ItemLayers.Count)
+                yield break;
+
+            var layer = Definition.ItemLayers[layerIndex];
+
+            // Convert world rect to tile coords
+            int minTx = Math.Max(0, worldView.Left / TileSize);
+            int minTy = Math.Max(0, worldView.Top / TileSize);
+            int maxTx = Math.Min(Definition.MapWidth - 1, worldView.Right / TileSize);
+            int maxTy = Math.Min(Definition.MapHeight - 1, worldView.Bottom / TileSize);
+
+            // Convert to chunk coords
+            int minCx = minTx / ChunkSize;
+            int minCy = minTy / ChunkSize;
+            int maxCx = maxTx / ChunkSize;
+            int maxCy = maxTy / ChunkSize;
+
+            for (int cy = minCy; cy <= maxCy; cy++)
+            {
+                for (int cx = minCx; cx <= maxCx; cx++)
+                {
+                    Point chunkCoord = new Point(cx, cy);
+                    string chunkKey = ChunkKeyToString(chunkCoord);
+
+                    if (layer.Chunks.TryGetValue(chunkKey, out var chunkData) && chunkData?.Items != null)
                     {
                         yield return (chunkCoord, chunkData);
                     }

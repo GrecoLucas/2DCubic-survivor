@@ -9,18 +9,16 @@ namespace CubeSurvivor.Entities
     /// </summary>
     public sealed class WorldObjectFactory : IWorldObjectFactory
     {
-        public Entity CreateCrate(IGameWorld world, Vector2 position, bool isDestructible = false, float maxHealth = 50f)
+        public Entity CreateCrate(IGameWorld world, Vector2 position, float width = 32f, float height = 32f, bool isDestructible = false, float maxHealth = 50f)
         {
             var crate = world.CreateEntity("Crate");
 
-            float crateSize = GameConfig.WallBlockSize;
-
             // Transformação e visual
             crate.AddComponent(new TransformComponent(position));
-            crate.AddComponent(new SpriteComponent(new Color(139, 69, 19), crateSize, crateSize, RenderLayer.GroundEffects)); // Cor marrom
+            crate.AddComponent(new SpriteComponent(new Color(139, 69, 19), width, height, RenderLayer.GroundEffects)); // Cor marrom
 
             // Componentes de física e colisão
-            crate.AddComponent(new ColliderComponent(crateSize, crateSize, ColliderTag.Default));
+            crate.AddComponent(new ColliderComponent(width, height, ColliderTag.Default));
             crate.AddComponent(new ObstacleComponent(
                 blocksMovement: true,
                 blocksBullets: true,
@@ -36,7 +34,7 @@ namespace CubeSurvivor.Entities
             return crate;
         }
 
-        public Entity CreateWall(IGameWorld world, Vector2 position, float width = 50f, float height = 50f)
+        public Entity CreateWall(IGameWorld world, Vector2 position, float width = 32f, float height = 32f)
         {
             var wall = world.CreateEntity("Wall");
 
@@ -55,7 +53,7 @@ namespace CubeSurvivor.Entities
             return wall;
         }
         
-        public Entity CreateRock(IGameWorld world, Vector2 position, float size = 50f)
+        public Entity CreateRock(IGameWorld world, Vector2 position, float size = 32f)
         {
             var rock = world.CreateEntity("Rock");
 

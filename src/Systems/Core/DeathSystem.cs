@@ -16,6 +16,7 @@ namespace CubeSurvivor.Systems
     {
         private readonly Random _random;
         private readonly BrainEntityFactory _brainFactory;
+        private Game.Map.BlockEntityStreamer _blockStreamer;
         
         public DeathSystem(TextureManager textureManager = null)
         {
@@ -25,6 +26,14 @@ namespace CubeSurvivor.Systems
             {
                 _brainFactory.SetTextureManager(textureManager);
             }
+        }
+
+        /// <summary>
+        /// Sets the block streamer so destroyed blocks can be removed from the map.
+        /// </summary>
+        public void SetBlockStreamer(Game.Map.BlockEntityStreamer streamer)
+        {
+            _blockStreamer = streamer;
         }
         
         public override void Update(GameTime gameTime)
@@ -41,6 +50,14 @@ namespace CubeSurvivor.Systems
                 // Se a entidade não está viva, marcar para remoção
                 if (!health.IsAlive)
                 {
+                    // Se for um bloco do mapa, removê-lo do mapa primeiro
+                    var mapBlock = entity.GetComponent<MapBlockComponent>();
+                    if (mapBlock != null && _blockStreamer != null)
+                    {
+                        _blockStreamer.RemoveBlock(mapBlock.TileX, mapBlock.TileY, mapBlock.LayerIndex);
+                        Console.WriteLine($"[DeathSystem] Removed map block at ({mapBlock.TileX}, {mapBlock.TileY}) layer {mapBlock.LayerIndex}");
+                    }
+                    
                     // Processar loot drop antes de remover
                     ProcessLootDrop(entity);
                     

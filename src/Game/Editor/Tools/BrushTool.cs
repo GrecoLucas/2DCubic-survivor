@@ -49,16 +49,31 @@ namespace CubeSurvivor.Game.Editor.Tools
                 return;
             }
 
-            if (context.EditMode == EditMode.Tiles)
+            // Use ActiveLayerKind to determine what to edit
+            switch (context.ActiveLayerKind)
             {
-                context.Map.SetTileAt(tilePos.X, tilePos.Y, context.ActiveBrushId, context.ActiveLayerIndex);
-                EditorLogger.Log("Paint", $"Tile painted: pos={tilePos} layer={context.ActiveLayerIndex} tileId={context.ActiveBrushId}");
-            }
-            else
-            {
-                BlockType blockType = (BlockType)context.ActiveBrushId;
-                context.Map.SetBlockAtTile(tilePos.X, tilePos.Y, blockType, context.ActiveLayerIndex);
-                EditorLogger.Log("Paint", $"Block painted: pos={tilePos} layer={context.ActiveLayerIndex} type={blockType}");
+                case EditableLayerKind.Tiles:
+                    context.Map.SetTileAt(tilePos.X, tilePos.Y, context.ActiveBrushId, context.ActiveTileLayerIndex);
+                    EditorLogger.Log("Paint", $"Tile painted: pos={tilePos} layer={context.ActiveTileLayerIndex} tileId={context.ActiveBrushId}");
+                    break;
+
+                case EditableLayerKind.Blocks:
+                    BlockType blockType = (BlockType)context.ActiveBrushId;
+                    context.Map.SetBlockAtTile(tilePos.X, tilePos.Y, blockType, context.ActiveBlockLayerIndex);
+                    EditorLogger.Log("Paint", $"Block painted: pos={tilePos} layer={context.ActiveBlockLayerIndex} type={blockType}");
+                    break;
+
+                case EditableLayerKind.ItemsLow:
+                    ItemType itemTypeLow = (ItemType)context.ActiveBrushId;
+                    context.Map.SetItemAtTile(tilePos.X, tilePos.Y, itemTypeLow, 0); // ItemsLow = index 0
+                    EditorLogger.Log("Paint", $"Item (Low) painted: pos={tilePos} type={itemTypeLow}");
+                    break;
+
+                case EditableLayerKind.ItemsHigh:
+                    ItemType itemTypeHigh = (ItemType)context.ActiveBrushId;
+                    context.Map.SetItemAtTile(tilePos.X, tilePos.Y, itemTypeHigh, 1); // ItemsHigh = index 1
+                    EditorLogger.Log("Paint", $"Item (High) painted: pos={tilePos} type={itemTypeHigh}");
+                    break;
             }
 
             _lastPainted = tilePos;

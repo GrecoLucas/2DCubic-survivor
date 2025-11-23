@@ -44,8 +44,31 @@ namespace CubeSurvivor.Game.Map
                     return null;
                 }
 
+                // Backward compatibility: ensure ItemLayers exist
+                if (map.ItemLayers == null || map.ItemLayers.Count == 0)
+                {
+                    Console.WriteLine("[MapLoader] Adding default ItemLayers for backward compatibility");
+                    map.ItemLayers = new System.Collections.Generic.List<ItemLayerDefinition>
+                    {
+                        new ItemLayerDefinition { Name = "ItemsLow" },
+                        new ItemLayerDefinition { Name = "ItemsHigh" }
+                    };
+                }
+                else if (map.ItemLayers.Count < 2)
+                {
+                    // Ensure we have exactly 2 item layers
+                    while (map.ItemLayers.Count < 2)
+                    {
+                        map.ItemLayers.Add(new ItemLayerDefinition 
+                        { 
+                            Name = map.ItemLayers.Count == 0 ? "ItemsLow" : "ItemsHigh" 
+                        });
+                    }
+                }
+
                 Console.WriteLine($"[MapLoader] Loaded map: {map.MapWidth}x{map.MapHeight} tiles, " +
                                   $"{map.TileLayers.Count} tile layers, " +
+                                  $"{map.ItemLayers.Count} item layers, " +
                                   $"{map.BlockLayers.Count} block layers, " +
                                   $"{map.Regions.Count} regions");
 
@@ -61,9 +84,16 @@ namespace CubeSurvivor.Game.Map
 
         /// <summary>
         /// Creates a default empty map with specified dimensions.
+        /// If tileSizePx is 0 or negative, uses player size (32px) as default.
         /// </summary>
-        public static MapDefinition CreateDefaultMap(int widthTiles, int heightTiles, int tileSizePx, int chunkSizeTiles)
+        public static MapDefinition CreateDefaultMap(int widthTiles, int heightTiles, int tileSizePx = 0, int chunkSizeTiles = 64)
         {
+            // Use player size (32px) as default if not specified
+            if (tileSizePx <= 0)
+            {
+                tileSizePx = 32; // Player sprite size
+            }
+            
             var map = new MapDefinition
             {
                 MapWidth = widthTiles,
@@ -79,6 +109,16 @@ namespace CubeSurvivor.Game.Map
                 IsCollisionLayer = false
             });
             
+            // Add default item layers (exactly 2)
+            map.ItemLayers.Add(new ItemLayerDefinition
+            {
+                Name = "ItemsLow"
+            });
+            map.ItemLayers.Add(new ItemLayerDefinition
+            {
+                Name = "ItemsHigh"
+            });
+            
             // Add default block layer
             map.BlockLayers.Add(new BlockLayerDefinition
             {
@@ -86,23 +126,29 @@ namespace CubeSurvivor.Game.Map
                 IsCollisionLayer = true
             });
             
-            // Add a default PlayerSpawn region in the center
-            int centerX = (widthTiles * tileSizePx) / 2 - 400;
-            int centerY = (heightTiles * tileSizePx) / 2 - 400;
+            // Add a default PlayerSpawn region in the center (TILE COORDINATES)
+            int centerTileX = widthTiles / 2;
+            int centerTileY = heightTiles / 2;
+            int spawnSizeTiles = 10; // 10x10 tiles spawn area
             map.Regions.Add(new RegionDefinition
             {
                 Id = "player_spawn_1",
                 Type = RegionType.PlayerSpawn,
-                Area = new Rectangle(centerX, centerY, 800, 800),
+                Area = new Rectangle(
+                    centerTileX - spawnSizeTiles / 2,
+                    centerTileY - spawnSizeTiles / 2,
+                    spawnSizeTiles,
+                    spawnSizeTiles
+                ), // TILE COORDINATES
                 Meta = new System.Collections.Generic.Dictionary<string, string>()
             });
             
-            // Add a large EnemySpawn region
+            // Add a large EnemySpawn region covering most of map (TILE COORDINATES)
             map.Regions.Add(new RegionDefinition
             {
                 Id = "enemy_spawn_1",
                 Type = RegionType.EnemySpawn,
-                Area = new Rectangle(0, 0, widthTiles * tileSizePx, heightTiles * tileSizePx),
+                Area = new Rectangle(0, 0, widthTiles, heightTiles), // TILE COORDINATES
                 Meta = new System.Collections.Generic.Dictionary<string, string>
                 {
                     ["maxEnemies"] = "100",
@@ -276,7 +322,7 @@ namespace CubeSurvivor.Game.Map
             
             // No maps exist, create default
             Console.WriteLine("[MapLoader] No maps found, creating default map");
-            var defaultMap = CreateDefaultMap(31, 31, 128, 64);
+            var defaultMap = CreateDefaultMap(31, 31, 32, 64); // Use player size (32px)
             
             // Save it
             string defaultPath = Path.Combine(mapsDir, "world1.json");

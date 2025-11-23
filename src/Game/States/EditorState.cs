@@ -27,6 +27,7 @@ namespace CubeSurvivor.Game.States
         private EditorCameraController _camera;
         private EditorRenderer _renderer;
         private Dictionary<ToolType, IEditorTool> _tools;
+        private Core.TextureManager _textureManager;
 
         // UI
         private LeftSidebar _leftSidebar;
@@ -72,6 +73,21 @@ namespace CubeSurvivor.Game.States
             };
 
             _mapFilePath = mapFilePath;
+
+            // Initialize texture manager
+            _textureManager = new Core.TextureManager(_graphicsDevice);
+            _context.TextureManager = _textureManager;
+
+            // Initialize layer visibility arrays
+            _context.TileLayerVisible = new bool[mapDefinition.TileLayers.Count];
+            _context.BlockLayerVisible = new bool[mapDefinition.BlockLayers.Count];
+            _context.ItemLayerVisible = new bool[2] { true, true }; // ItemsLow, ItemsHigh
+            
+            // Set all layers visible by default
+            for (int i = 0; i < _context.TileLayerVisible.Length; i++)
+                _context.TileLayerVisible[i] = true;
+            for (int i = 0; i < _context.BlockLayerVisible.Length; i++)
+                _context.BlockLayerVisible[i] = true;
 
             _camera = new EditorCameraController();
             _context.Camera = _camera; // Wire camera to context!
@@ -376,11 +392,24 @@ namespace CubeSurvivor.Game.States
             // 7. Tool overlay
             // ===================================================================
 
-            // Draw actual map tiles from ChunkedTileMap!
+            // CORRECT RENDER ORDER:
+            // 1. Tiles (ground)
             _renderer.DrawTiles(_spriteBatch, _pixelTexture, _context, _camera, _canvasBounds);
 
-            // Draw actual map blocks from ChunkedTileMap!
+            // 2. ItemsLow (items below blocks)
+            if (_context.MapDefinition?.ItemLayers != null && _context.MapDefinition.ItemLayers.Count > 0)
+            {
+                _renderer.DrawItems(_spriteBatch, _pixelTexture, _context, _camera, _canvasBounds, 0);
+            }
+
+            // 3. Blocks (collision obstacles)
             _renderer.DrawBlocks(_spriteBatch, _pixelTexture, _context, _camera, _canvasBounds);
+
+            // 4. ItemsHigh (items above blocks)
+            if (_context.MapDefinition?.ItemLayers != null && _context.MapDefinition.ItemLayers.Count > 1)
+            {
+                _renderer.DrawItems(_spriteBatch, _pixelTexture, _context, _camera, _canvasBounds, 1);
+            }
 
             // Draw grid overlay
             _renderer.DrawGrid(_spriteBatch, _pixelTexture, _context, _camera, _canvasBounds);

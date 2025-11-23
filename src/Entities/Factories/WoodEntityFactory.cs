@@ -25,15 +25,15 @@ namespace CubeSurvivor.Entities
             // Transformação e visual
             wood.AddComponent(new TransformComponent(position));
 
-            // Usar textura se disponível, senão usar cor
+            // Usar textura se disponível, senão usar cor - TUDO 32x32
             Texture2D woodTexture = _textureManager?.GetTexture("wood");
             if (woodTexture != null)
             {
-                wood.AddComponent(new SpriteComponent(woodTexture, 18f, 18f, null, RenderLayer.GroundItems));
+                wood.AddComponent(new SpriteComponent(woodTexture, 32f, 32f, null, RenderLayer.GroundItems));
             }
             else
             {
-                wood.AddComponent(new SpriteComponent(new Color(139, 90, 43), 18f, 18f, RenderLayer.GroundItems)); // Cor marrom
+                wood.AddComponent(new SpriteComponent(new Color(139, 90, 43), 32f, 32f, RenderLayer.GroundItems)); // Cor marrom
             }
 
             // Componente de pickup
@@ -44,8 +44,8 @@ namespace CubeSurvivor.Entities
             }
             wood.AddComponent(new PickupComponent(woodItem, quantity: quantity, pickupRadius: 50f));
 
-            // Collider para detecção de proximidade
-            wood.AddComponent(new ColliderComponent(18f, 18f, ColliderTag.Default));
+            // Collider para detecção de proximidade - 32x32
+            wood.AddComponent(new ColliderComponent(32f, 32f, ColliderTag.Default));
 
             return wood;
         }

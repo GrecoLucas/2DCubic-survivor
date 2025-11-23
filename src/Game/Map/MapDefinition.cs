@@ -27,8 +27,9 @@ namespace CubeSurvivor.Game.Map
 
         /// <summary>
         /// Size of each tile in pixels.
+        /// Should match player sprite size (default: 32px).
         /// </summary>
-        public int TileSize { get; set; } = 128;
+        public int TileSize { get; set; } = 32;
 
         // ============================================================
         // COMPATIBILITY ALIASES (Read-Only, Not Serialized)
@@ -78,6 +79,12 @@ namespace CubeSurvivor.Game.Map
         public List<TileLayerDefinition> TileLayers { get; set; } = new();
 
         /// <summary>
+        /// List of item layers. Exactly 2 layers: [0] = ItemsLow, [1] = ItemsHigh.
+        /// ItemsLow renders below blocks, ItemsHigh renders above blocks.
+        /// </summary>
+        public List<ItemLayerDefinition> ItemLayers { get; set; } = new();
+
+        /// <summary>
         /// List of block layers (walls, crates, trees, etc.).
         /// </summary>
         public List<BlockLayerDefinition> BlockLayers { get; set; } = new();
@@ -86,6 +93,11 @@ namespace CubeSurvivor.Game.Map
         /// List of regions for spawns, safe zones, biomes, etc.
         /// </summary>
         public List<RegionDefinition> Regions { get; set; } = new();
+
+        /// <summary>
+        /// List of items placed directly on the map (not spawned via regions).
+        /// </summary>
+        public List<PlacedItemDefinition> PlacedItems { get; set; } = new();
     }
 
     /// <summary>
@@ -108,6 +120,24 @@ namespace CubeSurvivor.Game.Map
         /// Key format: "cx,cy" (e.g., "0,0", "1,2").
         /// </summary>
         public Dictionary<string, ChunkTileData> Chunks { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Defines an item layer (pickups, collectibles).
+    /// Items never collide, they are just visual/collectible entities.
+    /// </summary>
+    public sealed class ItemLayerDefinition
+    {
+        /// <summary>
+        /// Name of this layer (e.g., "ItemsLow", "ItemsHigh").
+        /// </summary>
+        public string Name { get; set; } = "Items";
+
+        /// <summary>
+        /// Chunked item data indexed by chunk coordinate (cx, cy).
+        /// Key format: "cx,cy" (e.g., "0,0", "1,2").
+        /// </summary>
+        public Dictionary<string, ChunkItemData> Chunks { get; set; } = new();
     }
 
     /// <summary>
@@ -146,6 +176,19 @@ namespace CubeSurvivor.Game.Map
     }
 
     /// <summary>
+    /// Item data for a single chunk.
+    /// </summary>
+    public sealed class ChunkItemData
+    {
+        /// <summary>
+        /// 2D array of item types. Size is [ChunkSize, ChunkSize].
+        /// 0 means empty/no item.
+        /// </summary>
+        [JsonConverter(typeof(Array2DJsonConverter<ItemType>))]
+        public ItemType[,] Items { get; set; }
+    }
+
+    /// <summary>
     /// Block data for a single chunk.
     /// </summary>
     public sealed class ChunkBlockData
@@ -155,6 +198,21 @@ namespace CubeSurvivor.Game.Map
         /// </summary>
         [JsonConverter(typeof(Array2DJsonConverter<BlockType>))]
         public BlockType[,] Blocks { get; set; }
+    }
+
+    /// <summary>
+    /// Types of items that can be placed in item layers.
+    /// </summary>
+    public enum ItemType
+    {
+        Empty = 0,
+        Hammer = 1,
+        Apple = 2,
+        WoodPickup = 3,
+        GoldPickup = 4,
+        Brain = 5,
+        Gun = 6
+        // Extensible: add more items as needed
     }
 
     /// <summary>
@@ -173,6 +231,7 @@ namespace CubeSurvivor.Game.Map
     /// <summary>
     /// Defines a region in the map for spawning, safe zones, biomes, etc.
     /// Unifies all spawn/area data in a data-driven way.
+    /// Region coordinates are in TILE UNITS, not pixels.
     /// </summary>
     public sealed class RegionDefinition
     {
@@ -187,7 +246,8 @@ namespace CubeSurvivor.Game.Map
         public RegionType Type { get; set; }
 
         /// <summary>
-        /// World-space rectangle (in pixels) defining the region bounds.
+        /// Region bounds in TILE COORDINATES (not pixels).
+        /// X, Y, Width, Height are all tile indices (0..MapWidth/MapHeight).
         /// </summary>
         public Rectangle Area { get; set; }
 
@@ -196,6 +256,19 @@ namespace CubeSurvivor.Game.Map
         /// Examples: "maxEnemies", "intervalSeconds", "biome", "maxActive", etc.
         /// </summary>
         public Dictionary<string, string> Meta { get; set; } = new();
+
+        /// <summary>
+        /// Converts tile-based Area to world pixel rectangle.
+        /// </summary>
+        public Rectangle ToWorldPixels(int tileSize)
+        {
+            return new Rectangle(
+                Area.X * tileSize,
+                Area.Y * tileSize,
+                Area.Width * tileSize,
+                Area.Height * tileSize
+            );
+        }
     }
 
     /// <summary>
@@ -208,9 +281,47 @@ namespace CubeSurvivor.Game.Map
         TreeSpawn,
         WoodSpawn,
         GoldSpawn,
+        AppleSpawn,
+        ItemSpawn,  // Generic item spawn region (hammer, etc.)
         SafeZone,
         Biome
         // Extensible: add QuestZone, TriggerZone, etc.
+    }
+
+    /// <summary>
+    /// Defines an item placed directly on the map at a specific tile position.
+    /// </summary>
+    public sealed class PlacedItemDefinition
+    {
+        /// <summary>
+        /// Unique identifier for this placed item.
+        /// </summary>
+        public string Id { get; set; }
+
+        /// <summary>
+        /// Item ID (e.g., "hammer", "apple", "wood", "gold").
+        /// </summary>
+        public string ItemId { get; set; }
+
+        /// <summary>
+        /// Tile coordinates where the item is placed.
+        /// </summary>
+        public Point Tile { get; set; }
+
+        /// <summary>
+        /// Amount of items (stack size).
+        /// </summary>
+        public int Amount { get; set; } = 1;
+
+        /// <summary>
+        /// Whether this item respawns after being picked up.
+        /// </summary>
+        public bool Respawns { get; set; } = false;
+
+        /// <summary>
+        /// Respawn interval in seconds (only used if Respawns = true).
+        /// </summary>
+        public float RespawnIntervalSeconds { get; set; } = 10f;
     }
 }
 

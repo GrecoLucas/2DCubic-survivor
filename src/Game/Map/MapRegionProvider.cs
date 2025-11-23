@@ -31,6 +31,11 @@ namespace CubeSurvivor.Game.Map
         {
             return _map.Definition.Regions;
         }
+
+        public int GetTileSize()
+        {
+            return _map.TileSize;
+        }
     }
 }
 
