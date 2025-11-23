@@ -3,21 +3,45 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using CubeSurvivor.Game.Map;
+using CubeSurvivor.Game.Editor.Diagnostics;
 
 namespace CubeSurvivor.Game.Editor.Tools
 {
     /// <summary>
     /// Region tool: click-drag to create spawn/safe regions.
+    /// Also supports clicking to select regions and Delete key to remove them.
     /// </summary>
     public class RegionTool : IEditorTool
     {
         private Vector2? _startWorld;
         private Vector2? _currentWorld;
+        private bool _isDragging = false;
 
         public void OnMouseDown(Point tilePos, MouseState mouseState, EditorContext context)
         {
-            // Store tile coordinates (not world pixels)
+            // Erase mode: delete region at click position
+            if (context.RegionEraseMode)
+            {
+                TryErase(tilePos, context);
+                return;
+            }
+
+            // Check if clicking on an existing region first (hit-test from last to first for proper selection)
+            RegionDefinition clickedRegion = FindRegionAtTile(tilePos, context);
+            if (clickedRegion != null)
+            {
+                // Select this region WITHOUT changing the placement type
+                // ActiveRegionTypeToPlace remains unchanged - user can still place new regions of the chosen type
+                context.SelectedRegionId = clickedRegion.Id;
+                context.SelectedRegionRef = clickedRegion;
+                EditorLogger.Log("RegionTool", $"Selected existing region: {clickedRegion.Id} ({clickedRegion.Type}). Placement type remains: {context.ActiveRegionTypeToPlace}");
+                _isDragging = false;
+                return; // IMPORTANT: don't start creating
+            }
+
+            // Otherwise start dragging to create new region
             _startWorld = tilePos.ToVector2();
+            _isDragging = true;
         }
 
         public void OnMouseDrag(Point tilePos, MouseState mouseState, EditorContext context)
@@ -28,6 +52,9 @@ namespace CubeSurvivor.Game.Editor.Tools
 
         public void OnMouseUp(Point tilePos, MouseState mouseState, EditorContext context)
         {
+            // Only create region if we were actually dragging
+            if (!_isDragging) return;
+            
             if (_startWorld.HasValue && context.MapDefinition != null)
             {
                 // Use tile coordinates directly (snap to tile grid)
@@ -45,23 +72,94 @@ namespace CubeSurvivor.Game.Editor.Tools
 
                 if (tileRect.Width > 0 && tileRect.Height > 0)
                 {
-                    // Create new region with tile coordinates
-                    string id = $"{context.PendingRegionType}_{Guid.NewGuid().ToString().Substring(0, 8)}";
+                    // Use ActiveRegionTypeToPlace from Region Palette
+                    RegionType regionType = context.ActiveRegionTypeToPlace;
+                    int tileSize = context.MapDefinition.TileSize;
+                    string mapPath = context.MapDefinition != null ? "unknown" : "null";
+                    
+                    // Get defaults for this region type
+                    var defaults = RegionDefaults.GetDefaults(regionType);
+                    
+                    // Generate ID based on type
+                    string typePrefix = regionType.ToString().ToLowerInvariant();
+                    string id = $"{typePrefix}_{Guid.NewGuid().ToString().Substring(0, 8)}";
+                    
+                    // EXTENSIVE DEBUG LOG: Region creation
+                    EditorLogger.Log("RegionTool", "=== CreateRegion ===");
+                    EditorLogger.Log("RegionTool", $"  Map={mapPath}");
+                    EditorLogger.Log("RegionTool", $"  Type={regionType} ({(int)regionType})");
+                    EditorLogger.Log("RegionTool", $"  StartTile=({startTile.X},{startTile.Y}) EndTile=({endTile.X},{endTile.Y})");
+                    EditorLogger.Log("RegionTool", $"  AreaTiles: L={tileRect.Left} R={tileRect.Right} T={tileRect.Top} B={tileRect.Bottom}");
+                    EditorLogger.Log("RegionTool", $"  SizeTiles: W={tileRect.Width} H={tileRect.Height}");
+                    EditorLogger.Log("RegionTool", $"  TileSizePx={tileSize}");
+                    EditorLogger.Log("RegionTool", $"  AreaWorldPx: X={tileRect.Left * tileSize} Y={tileRect.Top * tileSize} W={tileRect.Width * tileSize} H={tileRect.Height * tileSize}");
+                    
                     RegionDefinition region = new RegionDefinition
                     {
                         Id = id,
-                        Type = context.PendingRegionType,
+                        Type = regionType,
                         Area = tileRect, // TILE COORDINATES, not pixels!
-                        Meta = new System.Collections.Generic.Dictionary<string, string>(context.PendingRegionMeta)
+                        Meta = new System.Collections.Generic.Dictionary<string, string>(defaults)
                     };
 
                     // Use context method to ensure only one PlayerSpawn
                     context.AddRegion(region);
+                    
+                    // Select the newly created region
+                    context.SelectedRegionId = region.Id;
+                    context.SelectedRegionRef = region;
+                    
+                    EditorLogger.Log("RegionTool", $"Created region: {id} ({regionType}) - Total regions now: {context.MapDefinition.Regions.Count}");
                 }
             }
 
             _startWorld = null;
             _currentWorld = null;
+            _isDragging = false;
+        }
+
+        /// <summary>
+        /// Finds a region that contains the given tile coordinate.
+        /// Returns the LAST matching region (topmost in draw order) for proper selection.
+        /// </summary>
+        private RegionDefinition FindRegionAtTile(Point tilePos, EditorContext context)
+        {
+            if (context.MapDefinition == null) return null;
+
+            // Search from last to first to get the topmost region
+            for (int i = context.MapDefinition.Regions.Count - 1; i >= 0; i--)
+            {
+                var region = context.MapDefinition.Regions[i];
+                // Region.Area is in tile coordinates
+                if (region.Area.Contains(tilePos))
+                {
+                    return region;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Tries to erase a region at the given tile position.
+        /// </summary>
+        private void TryErase(Point tilePos, EditorContext context)
+        {
+            var hit = FindRegionAtTile(tilePos, context);
+            if (hit == null) return;
+
+            // Optional: protect PlayerSpawn (comment out if you want to allow erasing it)
+            if (hit.Type == RegionType.PlayerSpawn)
+            {
+                EditorLogger.Log("RegionTool", "Cannot erase PlayerSpawn region");
+                return;
+            }
+
+            context.DeleteRegion(hit.Id);
+            context.SelectedRegionId = null;
+            context.SelectedRegionRef = null;
+
+            EditorLogger.Log("RegionTool", $"Erased region {hit.Id} ({hit.Type})");
         }
 
         public void Draw(SpriteBatch spriteBatch, Texture2D pixelTexture, SpriteFont font, EditorContext context, EditorCameraController camera, Rectangle canvasBounds)

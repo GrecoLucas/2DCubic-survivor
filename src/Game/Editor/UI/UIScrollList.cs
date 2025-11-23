@@ -54,6 +54,20 @@ namespace CubeSurvivor.Game.Editor.UI
             _items.Clear();
             ScrollOffset = 0;
         }
+
+        /// <summary>
+        /// Scrolls the list by the given delta (positive = down, negative = up).
+        /// </summary>
+        public void ScrollBy(int delta)
+        {
+            ScrollOffset -= delta / 10f; // Smooth scroll
+            
+            // Calculate max scroll based on content height
+            int contentHeight = _items.Count * (ItemHeight + Padding) + Padding;
+            MaxScrollOffset = Math.Max(0, contentHeight - Bounds.Height);
+            
+            ScrollOffset = Math.Max(0, Math.Min(ScrollOffset, MaxScrollOffset));
+        }
         
         public override void Update(GameTime gameTime, MouseState mouseState, MouseState previousMouseState)
         {

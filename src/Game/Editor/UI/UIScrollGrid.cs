@@ -31,6 +31,15 @@ namespace CubeSurvivor.Game.Editor.UI
         private int _scrollOffset;
         private int _previousScrollValue;
 
+        /// <summary>
+        /// Scrolls the grid by the given delta (positive = down, negative = up).
+        /// </summary>
+        public void ScrollBy(int delta)
+        {
+            _scrollOffset -= delta / 10;
+            _scrollOffset = System.Math.Max(0, _scrollOffset);
+        }
+
         public override void Update(GameTime gameTime, MouseState mouseState, MouseState previousMouseState)
         {
             if (!Visible || !Enabled) return;

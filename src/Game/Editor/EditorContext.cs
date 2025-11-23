@@ -60,12 +60,27 @@ namespace CubeSurvivor.Game.Editor
         // Active brush (tile ID or block type)
         public int ActiveBrushId { get; set; } = 1; // Default: Grass
 
-        // Region creation
-        public RegionType PendingRegionType { get; set; } = RegionType.PlayerSpawn;
+        // Region creation - SINGLE SOURCE OF TRUTH
+        // ActiveRegionTypeToPlace is the ONLY field that controls what type gets placed next
+        public RegionType ActiveRegionTypeToPlace { get; set; } = RegionType.EnemySpawn;
+        
+        // Legacy alias for backward compatibility - always returns/sets ActiveRegionTypeToPlace
+        [System.Obsolete("Use ActiveRegionTypeToPlace instead")]
+        public RegionType PendingRegionType 
+        { 
+            get => ActiveRegionTypeToPlace;
+            set => ActiveRegionTypeToPlace = value;
+        }
+        
+        // Meta for the active region type (computed from defaults when type changes)
         public Dictionary<string, string> PendingRegionMeta { get; set; } = new Dictionary<string, string>();
 
         // Selected region
         public string SelectedRegionId { get; set; }
+        public RegionDefinition SelectedRegionRef { get; set; }
+        
+        // Region erase mode
+        public bool RegionEraseMode { get; set; } = false;
 
         // Dirty flag
         public bool IsDirty { get; set; }
@@ -153,7 +168,18 @@ namespace CubeSurvivor.Game.Editor
         /// </summary>
         public void AddRegion(RegionDefinition region)
         {
-            if (MapDefinition == null) return;
+            if (MapDefinition == null)
+            {
+                EditorLogger.LogError("Regions", "Cannot add region: MapDefinition is null");
+                return;
+            }
+
+            // EXTENSIVE DEBUG LOG: Region addition
+            EditorLogger.Log("Regions", $"=== AddRegion ===");
+            EditorLogger.Log("Regions", $"  id={region.Id} type={region.Type}({(int)region.Type})");
+            EditorLogger.Log("Regions", $"  areaTiles: L={region.Area.Left} R={region.Area.Right} T={region.Area.Top} B={region.Area.Bottom}");
+            EditorLogger.Log("Regions", $"  areaSize: W={region.Area.Width} H={region.Area.Height}");
+            EditorLogger.Log("Regions", $"  tileSize={MapDefinition.TileSize} mapSize={MapDefinition.MapWidth}x{MapDefinition.MapHeight}");
 
             // If this is a PlayerSpawn, remove all existing PlayerSpawn regions first
             if (region.Type == RegionType.PlayerSpawn)
@@ -167,7 +193,7 @@ namespace CubeSurvivor.Game.Editor
 
             MapDefinition.Regions.Add(region);
             IsDirty = true;
-            EditorLogger.Log("Regions", $"Added region '{region.Id}' (Type={region.Type})");
+            EditorLogger.Log("Regions", $"Added region '{region.Id}' (Type={region.Type}) - Total regions now: {MapDefinition.Regions.Count}");
         }
     }
 

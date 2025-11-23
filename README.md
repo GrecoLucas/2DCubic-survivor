@@ -1,6 +1,5 @@
 # Cube Survivor
 
-<<<<<<< HEAD
 Jogo 2D top-down desenvolvido com MonoGame seguindo os princípios **SOLID** e arquitetura **Entity-Component-System (ECS)** pura.
 
 ## 🎯 Características Principais
@@ -10,11 +9,20 @@ Jogo 2D top-down desenvolvido com MonoGame seguindo os princípios **SOLID** e a
 - ✅ **Sistema de Registries**: Adicione novos elementos sem modificar código existente
 - ✅ **Pattern Builder**: Construção fluente e limpa de entidades complexas
 - ✅ **Fácil Extensão**: Adicione novos biomas, inimigos e armas em minutos
+- ✅ **Editor de Mapas In-Game**: Crie e edite mapas com ferramentas completas
+- ✅ **Sistema de Regiões**: Spawn baseado em regiões (sem hardcoding)
+- ✅ **Chunked World Streaming**: Mapas grandes com streaming eficiente
 
 ## 📚 Documentação
 
+Toda a documentação está em `docs/`:
+
+- **[Índice Completo](docs/INDEX.md)**: Navegação por toda a documentação
 - **[Guia de Arquitetura](docs/ARCHITECTURE_GUIDE.md)**: Princípios SOLID, ECS e como estender o jogo
 - **[Exemplos Práticos](docs/EXAMPLES.md)**: Código pronto para criar novos elementos
+- **[Referência Rápida](docs/QUICK_REFERENCE.md)**: Checklists e comandos rápidos
+- **[Guia de Início Rápido](docs/QUICK_START.md)**: Para novos desenvolvedores
+- **[Histórico de Desenvolvimento](docs/DEVELOPMENT_HISTORY.md)**: Refatorações e melhorias importantes
 - **[Sistema de Construção](docs/CONSTRUCTION_SYSTEM.md)**: Como funciona o sistema de building
 - **[Sistema de Anexos](docs/SOCKET_ATTACHMENT_SYSTEM.md)**: Sistema de sockets para armas
 - **[Sistema de Mundo](docs/WORLD_SYSTEM.md)**: Biomas, recursos e spawn
@@ -29,47 +37,26 @@ CubeSurvivor/
 │   ├── GameSystem.cs         # Classe base para sistemas
 │   ├── GameWorld.cs          # Gerenciador de entidades e sistemas
 │   └── Registry/             # Sistema de registries genéricos
-│       ├── IRegistry.cs
-│       └── Registry.cs
 │
 ├── Components/                # Componentes (APENAS DADOS)
 │   ├── Combat/               # Componentes de combate
 │   ├── Common/               # Componentes básicos (Transform, Sprite, etc)
 │   ├── AI/                   # Componentes de IA
-│   ├── Physics/              # Colisores e física
-│   └── ...
+│   └── Physics/              # Colisores e física
 │
 ├── Systems/                   # Sistemas (APENAS LÓGICA)
 │   ├── Combat/               # Sistemas de combate
 │   ├── Rendering/            # Sistemas de renderização
 │   ├── World/                # Sistemas de mundo
-│   ├── Input/                # Sistema de input
-│   └── ...
-│
-├── Entities/                  # Factories para criar entidades
-│   ├── Factories/
-│   │   ├── IEnemyFactory.cs
-│   │   ├── EnemyFactory.cs
-│   │   ├── IWeaponFactory.cs
-│   │   ├── WeaponFactory.cs
-│   │   ├── IResourceFactory.cs
-│   │   └── ResourceFactory.cs
-│   └── Interfaces/
+│   └── Input/                # Sistema de input
 │
 ├── Game/
-│   ├── Registries/           # Registries para extensibilidade
-│   │   ├── BiomeRegistry.cs   # Registro de biomas
-│   │   ├── EnemyRegistry.cs   # Registro de inimigos
-│   │   └── WeaponRegistry.cs  # Registro de armas
-│   └── ...
-│
-├── Builders/                  # Builders para criação fluente
-│   ├── EntityBuilder.cs
-│   └── GameWorldBuilder.cs
+│   ├── Map/                  # Sistema de mapas (chunked, multi-layer)
+│   ├── Editor/               # Editor de mapas in-game
+│   ├── States/               # Estados do jogo (Menu, Play, Editor)
+│   └── Registries/           # Registries para extensibilidade
 │
 └── docs/                      # Documentação completa
-    ├── ARCHITECTURE_GUIDE.md
-    └── EXAMPLES.md
 ```
 
 ## 🚀 Início Rápido
@@ -89,13 +76,31 @@ dotnet run
 
 ## 🎮 Controles
 
-- **WASD**: Movimento
-- **Mouse**: Mirar
-- **Clique Esquerdo**: Atirar
-- **E**: Coletar itens
-- **I**: Abrir inventário
-- **1-9**: Usar itens do inventário
-- **Space**: Dash (se tiver o componente)
+### Main Menu
+- **Mouse-only** - Click buttons to navigate
+- **Fullscreen** toggle in bottom-right
+- **Play/Edit/New/Exit** buttons
+
+### Editor
+- **Left Sidebar:** Tools, Layers, Palettes (Tiles/Blocks/Items), Region Types
+- **Right Sidebar:** Layers list, Regions list (with Focus/Delete), Region Meta Editor
+- **Top Center:** "SAVE & EXIT" button
+- **Left Mouse:** Paint/Place
+- **Right Mouse:** Pan camera
+- **WASD:** Move camera
+- **Mouse Wheel:** Zoom
+- **ESC:** Pause menu
+- **S:** Quick save
+- **Delete/Backspace:** Delete selected region
+
+### Gameplay
+- **WASD:** Move
+- **Mouse:** Aim
+- **Left Click:** Shoot
+- **E:** Pickup items
+- **I:** Inventory
+- **1-9:** Use inventory items
+- **Space:** Dash (if available)
 
 ## ⚡ Adicionar Novos Elementos
 
@@ -150,6 +155,48 @@ BiomeRegistry.Instance.Register("desert", new BiomeDefinition
 
 **Veja exemplos completos em [docs/EXAMPLES.md](docs/EXAMPLES.md)**
 
+## 🗺️ Sistema de Mapas
+
+Maps are stored as JSON in `assets/maps/`:
+
+```json
+{
+  "mapWidth": 256,
+  "mapHeight": 256,
+  "tileSize": 32,
+  "chunkSize": 64,
+  "tileLayers": [...],
+  "blockLayers": [...],
+  "itemLayers": [...],
+  "regions": [
+    {
+      "id": "player_spawn_1",
+      "type": "PlayerSpawn",
+      "area": {"x": 10, "y": 10, "width": 5, "height": 5},
+      "meta": {}
+    }
+  ]
+}
+```
+
+### Block Types
+- `Empty` (0)
+- `Wall` (1)
+- `Crate` (2)
+- `Tree` (3)
+- `Rock` (4)
+
+### Region Types
+- `PlayerSpawn` - Where player starts
+- `EnemySpawn` - Enemy spawning areas
+- `GoldSpawn` - Gold resource spawning
+- `WoodSpawn` - Wood resource spawning
+- `AppleSpawn` - Apple resource spawning
+- `TreeSpawn` - Tree block spawning
+- `ItemSpawn` - Generic item spawning
+- `SafeZone` - Safe areas (no enemies)
+- `Biome` - Biome definition
+
 ## 🏛️ Princípios de Design
 
 ### SOLID
@@ -192,6 +239,8 @@ var player = new EntityBuilder(world, "Player")
 - ✅ Sistema de Spawn de Recursos
 - ✅ Sistema de Renderização (com camadas)
 - ✅ Sistema de UI
+- ✅ Editor de Mapas In-Game
+- ✅ Sistema de Regiões (spawn baseado em regiões)
 
 ### Elementos do Jogo
 - ✅ Múltiplos tipos de inimigos (configuráveis)
@@ -205,14 +254,17 @@ var player = new EntityBuilder(world, "Player")
 ## 📖 Aprenda Mais
 
 ### Para Iniciantes
-1. Leia [ARCHITECTURE_GUIDE.md](docs/ARCHITECTURE_GUIDE.md) para entender os princípios
-2. Veja [EXAMPLES.md](docs/EXAMPLES.md) para exemplos práticos
-3. Experimente adicionar um novo inimigo seguindo os exemplos
+1. Leia [README.md](README.md) para visão geral
+2. Veja [QUICK_START.md](docs/QUICK_START.md) para começar rápido
+3. Leia [ARCHITECTURE_GUIDE.md](docs/ARCHITECTURE_GUIDE.md) para entender os princípios
+4. Veja [EXAMPLES.md](docs/EXAMPLES.md) para exemplos práticos
+5. Experimente adicionar um novo inimigo seguindo os exemplos
 
 ### Para Avançados
 - Crie novos sistemas complexos
 - Desenvolva mods usando os Registries
 - Contribua com novos padrões de design
+- Veja [DEVELOPMENT_HISTORY.md](docs/DEVELOPMENT_HISTORY.md) para histórico de refatorações
 
 ## 🤝 Contribuindo
 
@@ -231,163 +283,3 @@ Este projeto está sob a licença MIT.
 - MonoGame Framework
 - Comunidade ECS
 - Princípios SOLID de Robert C. Martin
-=======
-A top-down survival game built with MonoGame featuring an in-game map editor, chunked world streaming, and data-driven gameplay.
-
-## Features
-
-### 🎮 Gameplay
-- Top-down survival mechanics
-- Enemy waves and resource gathering
-- Inventory and crafting system
-- Region-based spawning (no hardcoding)
-- Huge maps with chunk streaming
-
-### 🗺️ Map System
-- **Chunked storage** for massive worlds
-- **Multi-layer** tiles and blocks
-- **Region-based spawns** (Player, Enemy, Wood, Gold, SafeZones)
-- **JSON serialization** for easy editing
-- **Backward compatible** with legacy maps
-
-### ✏️ In-Game Editor
-- **Mouse-first UI** with left/right sidebars
-- **Tools:** Brush, Eraser, Box Fill, Flood Fill, Picker, Regions
-- **Live editing** with instant feedback
-- **Undo/Redo** system (Ctrl+Z/Y)
-- **Save & Exit** button
-- **Region management** (create, focus, delete)
-
-## Quick Start
-
-```bash
-# Build
-dotnet build CubeSurvivor.csproj
-
-# Run
-dotnet run --project CubeSurvivor.csproj
-```
-
-## Controls
-
-### Main Menu
-- **Mouse-only** - Click buttons to navigate
-- **Fullscreen** toggle in bottom-right
-- **Play/Edit/New/Exit** buttons
-
-### Editor
-- **Left Sidebar:** Tools, Mode (Tiles/Blocks), Palette, Region Types
-- **Right Sidebar:** Layers list, Regions list (with Focus/Delete)
-- **Top Center:** "SAVE & EXIT" button
-- **Left Mouse:** Paint/Place
-- **Right Mouse:** Pan camera
-- **WASD:** Move camera
-- **Mouse Wheel:** Zoom
-- **ESC:** Save and exit to menu
-- **S:** Quick save
-- **Ctrl+Z/Y:** Undo/Redo
-
-### Gameplay
-- **WASD:** Move
-- **Mouse:** Aim
-- **Left Click:** Shoot
-- **E:** Pickup items
-- **I:** Inventory
-
-## Project Structure
-
-```
-src/
-├── Game/
-│   ├── Map/              # Map definition, loader, saver, streaming
-│   ├── Editor/           # In-game editor (state, sidebar, tools)
-│   ├── States/           # Game states (Menu, Play, Editor)
-│   ├── Camera/           # Camera system
-│   └── Configuration/    # Game config
-├── Systems/              # ECS systems
-│   ├── Core/             # Spawn, collision, etc.
-│   ├── Rendering/        # Map & entity rendering
-│   └── World/            # Resource spawns, harvesting
-├── Components/           # ECS components
-├── Entities/             # Entity factories
-├── Inventory/            # Inventory system
-└── Core/                 # ECS core, spatial hash
-```
-
-## Map Format
->>>>>>> c4d07b7 (new editor)
-
-Maps are stored as JSON in `assets/maps/`:
-
-```json
-{
-  "mapWidthTiles": 256,
-  "mapHeightTiles": 256,
-  "tileSizePx": 128,
-  "chunkSizeTiles": 64,
-  "tileLayers": [...],
-  "blockLayers": [...],
-  "regions": [
-    {
-      "id": "player_spawn_1",
-      "type": "PlayerSpawn",
-      "rectPx": [10000, 10000, 800, 800]
-    }
-  ]
-}
-```
-
-### Block Types
-- `Empty` (0)
-- `Wall` (1)
-- `Crate` (2)
-- `Tree` (3)
-- `Rock` (4)
-
-### Region Types
-- `PlayerSpawn` - Where player starts
-- `EnemySpawn` - Enemy spawning areas
-- `WoodSpawn` - Wood resource spawning
-- `GoldSpawn` - Gold resource spawning
-- `SafeZone` - Safe areas (no enemies)
-
-## Architecture
-
-### ECS (Entity-Component-System)
-Clean separation of data (Components) and logic (Systems).
-
-### Chunk Streaming
-Large maps divided into chunks. Only visible chunks are rendered. Blocks near camera spawn as ECS entities.
-
-### Data-Driven
-All spawns, regions, and map data loaded from JSON. Zero hardcoding.
-
-### SOLID Principles
-- Single Responsibility
-- Open/Closed
-- Liskov Substitution
-- Interface Segregation
-- Dependency Inversion
-
-## Development
-
-### Adding New Block Types
-1. Add to `BlockType` enum in `MapDefinition.cs`
-2. Add sprite/color in rendering system
-3. Add to editor palette in `LeftSidebar.cs`
-4. Update `WorldObjectFactory` if needed
-
-### Adding New Region Types
-1. Add to `RegionType` enum in `MapDefinition.cs`
-2. Add spawn system logic if needed
-3. Add to editor region picker in `LeftSidebar.cs`
-
-## License
-
-(Your license here)
-
-## Credits
-
-Built with:
-- MonoGame
-- C# / .NET 8

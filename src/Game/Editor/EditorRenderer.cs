@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using CubeSurvivor.Game.Map;
 using CubeSurvivor.Game.Editor.Diagnostics;
+using CubeSurvivor.Game.Editor.UI;
 
 namespace CubeSurvivor.Game.Editor
 {
@@ -13,7 +14,8 @@ namespace CubeSurvivor.Game.Editor
     /// </summary>
     public class EditorRenderer
     {
-        private static bool _loggedFirstDraw = false;
+        private static bool _loggedFirstDraw = false; // For DrawTiles
+        private static bool _loggedFirstDrawRegions = false; // For DrawRegions
         public void DrawGrid(SpriteBatch spriteBatch, Texture2D pixelTexture, EditorContext context, EditorCameraController camera, Rectangle canvasBounds)
         {
             if (context.MapDefinition == null) return;
@@ -102,10 +104,44 @@ namespace CubeSurvivor.Game.Editor
         {
             if (context.MapDefinition == null) return;
 
+            int tileSize = context.MapDefinition.TileSize;
+            Vector2 cameraPos = camera?.Position ?? Vector2.Zero;
+
+            // EXTENSIVE DEBUG LOG: First draw per session
+            if (!_loggedFirstDrawRegions && context.MapDefinition.Regions != null && context.MapDefinition.Regions.Count > 0)
+            {
+                EditorLogger.Log("EditorRenderer", "=== DrawRegions (first time) ===");
+                EditorLogger.Log("EditorRenderer", $"  tileSize={tileSize} camera=({cameraPos.X:F1},{cameraPos.Y:F1})");
+                int count = Math.Min(3, context.MapDefinition.Regions.Count);
+                for (int i = 0; i < count; i++)
+                {
+                    var region = context.MapDefinition.Regions[i];
+                    Rectangle worldRect = new Rectangle(
+                        region.Area.X * tileSize,
+                        region.Area.Y * tileSize,
+                        region.Area.Width * tileSize,
+                        region.Area.Height * tileSize
+                    );
+                    EditorLogger.Log("EditorRenderer", $"  region[{i}] {region.Id}: tiles L={region.Area.Left} R={region.Area.Right} T={region.Area.Top} B={region.Area.Bottom}");
+                    EditorLogger.Log("EditorRenderer", $"    -> worldPxRect X={worldRect.X} Y={worldRect.Y} W={worldRect.Width} H={worldRect.Height}");
+                }
+                _loggedFirstDrawRegions = true;
+            }
+
             foreach (var region in context.MapDefinition.Regions)
             {
-                Point screenTopLeft = camera.WorldToScreen(region.Area.Location.ToVector2(), canvasBounds);
-                Point screenBottomRight = camera.WorldToScreen(new Vector2(region.Area.Right, region.Area.Bottom), canvasBounds);
+                // Convert tile coordinates to world pixels
+                // Region.Area is in tile coordinates (Left, Top, Width, Height)
+                Rectangle worldRect = new Rectangle(
+                    region.Area.X * tileSize,
+                    region.Area.Y * tileSize,
+                    region.Area.Width * tileSize,
+                    region.Area.Height * tileSize
+                );
+
+                // Convert world pixels to screen coordinates
+                Point screenTopLeft = camera.WorldToScreen(worldRect.Location.ToVector2(), canvasBounds);
+                Point screenBottomRight = camera.WorldToScreen(new Vector2(worldRect.Right, worldRect.Bottom), canvasBounds);
 
                 Rectangle screenRect = new Rectangle(
                     screenTopLeft.X,
@@ -124,7 +160,8 @@ namespace CubeSurvivor.Game.Editor
                 if (font != null)
                 {
                     string label = $"{region.Type}\n{region.Id}";
-                    spriteBatch.DrawString(font, label, screenTopLeft.ToVector2() + new Vector2(4, 4), Color.White);
+                    string safeLabel = FontUtil.SanitizeForFont(font, label);
+                    spriteBatch.DrawString(font, safeLabel, screenTopLeft.ToVector2() + new Vector2(4, 4), Color.White);
                 }
             }
         }

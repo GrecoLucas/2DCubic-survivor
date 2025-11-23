@@ -249,6 +249,7 @@ namespace CubeSurvivor.Game.Map
         /// Region bounds in TILE COORDINATES (not pixels).
         /// X, Y, Width, Height are all tile indices (0..MapWidth/MapHeight).
         /// </summary>
+        [System.Text.Json.Serialization.JsonConverter(typeof(Serialization.RectangleJsonConverter))]
         public Rectangle Area { get; set; }
 
         /// <summary>
@@ -273,19 +274,21 @@ namespace CubeSurvivor.Game.Map
 
     /// <summary>
     /// Types of regions that can be defined in a map.
+    /// IMPORTANT: Numeric values are locked for backward compatibility with existing maps.
+    /// Never reorder - only append new types at the end.
     /// </summary>
     public enum RegionType
     {
-        PlayerSpawn,
-        EnemySpawn,
-        TreeSpawn,
-        WoodSpawn,
-        GoldSpawn,
-        AppleSpawn,
-        ItemSpawn,  // Generic item spawn region (hammer, etc.)
-        SafeZone,
-        Biome
-        // Extensible: add QuestZone, TriggerZone, etc.
+        PlayerSpawn = 0,
+        EnemySpawn = 1,
+        TreeSpawn = 2,
+        WoodSpawn = 3,
+        GoldSpawn = 4,
+        AppleSpawn = 5,
+        ItemSpawn = 6,  // Generic item spawn region (hammer, etc.)
+        SafeZone = 7,
+        Biome = 8
+        // Extensible: add QuestZone, TriggerZone, etc. at the end
     }
 
     /// <summary>

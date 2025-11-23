@@ -1,6 +1,8 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
+using CubeSurvivor.Game.Map.Serialization;
 
 namespace CubeSurvivor.Game.Map
 {
@@ -33,20 +35,51 @@ namespace CubeSurvivor.Game.Map
                     Directory.CreateDirectory(directory);
                 }
 
+                // EXTENSIVE DEBUG LOG: Before saving
+                Console.WriteLine($"[MapSaver] === Saving map to {path} ===");
+                Console.WriteLine($"[MapSaver] Regions count={map.Regions?.Count ?? 0}");
+                
+                if (map.Regions != null && map.Regions.Count > 0)
+                {
+                    foreach (var region in map.Regions)
+                    {
+                        Console.WriteLine($"[MapSaver]   - id={region.Id} type={(int)region.Type}({region.Type}) areaTiles L={region.Area.Left} R={region.Area.Right} T={region.Area.Top} B={region.Area.Bottom}");
+                        if (region.Meta != null && region.Meta.Count > 0)
+                        {
+                            var metaStr = string.Join(", ", region.Meta.Select(kvp => $"{kvp.Key}={kvp.Value}"));
+                            Console.WriteLine($"[MapSaver]     meta: {metaStr}");
+                        }
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("[MapSaver]   WARNING: Regions list is null or empty!");
+                }
+
                 var options = new JsonSerializerOptions
                 {
                     WriteIndented = true,
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
                 };
+                options.Converters.Add(new RectangleJsonConverter());
 
                 string json = JsonSerializer.Serialize(map, options);
+                
+                // Check if JSON contains regions key
+                bool hasRegionsKey = json.Contains("\"regions\"", StringComparison.OrdinalIgnoreCase) || 
+                                     json.Contains("\"Regions\"", StringComparison.OrdinalIgnoreCase);
+                Console.WriteLine($"[MapSaver] JSON contains key 'regions': {hasRegionsKey}");
+                
                 File.WriteAllText(path, json);
-
+                
+                long fileSize = new FileInfo(path).Length;
+                Console.WriteLine($"[MapSaver] Saved bytes={fileSize}");
                 Console.WriteLine($"[MapSaver] Successfully saved map to: {path}");
                 Console.WriteLine($"[MapSaver] Map size: {map.MapWidth}x{map.MapHeight} tiles, " +
+                                  $"tileSize={map.TileSize}px, " +
                                   $"{map.TileLayers.Count} tile layers, " +
                                   $"{map.BlockLayers.Count} block layers, " +
-                                  $"{map.Regions.Count} regions");
+                                  $"{map.Regions?.Count ?? 0} regions");
 
                 return true;
             }

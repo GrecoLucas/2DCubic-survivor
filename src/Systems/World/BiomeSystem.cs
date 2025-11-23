@@ -39,7 +39,17 @@ namespace CubeSurvivor.Systems.World
 
         public bool AllowsEnemySpawnsAt(Vector2 pos)
         {
-            return GetBiomeAt(pos)?.AllowsEnemySpawns ?? false;
+            // If there are no biomes defined, do NOT block spawns (allow by default)
+            if (_biomes == null || _biomes.Count == 0)
+                return true;
+
+            var biome = GetBiomeAt(pos);
+
+            // If tile is not inside any biome, allow by default
+            if (biome == null)
+                return true;
+
+            return biome.AllowsEnemySpawns;
         }
 
         public System.Collections.Generic.IEnumerable<Biome> GetAllBiomes()

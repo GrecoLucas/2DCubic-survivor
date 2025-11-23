@@ -469,6 +469,37 @@ namespace CubeSurvivor.Game.States
             _world.AddSystem(new ConstructionSystem(_worldObjectFactory));
             
             // (12) Spawning systems V2
+            // EXTENSIVE DEBUG LOG: Region loading
+            Console.WriteLine($"[PlayState] === Region Loading ===");
+            Console.WriteLine($"[PlayState] Total regions: {_chunkedMap.Definition.Regions?.Count ?? 0}");
+            
+            var enemyRegions = _regionProvider.GetRegions(RegionType.EnemySpawn).ToList();
+            Console.WriteLine($"[PlayState] EnemySpawn regions found: {enemyRegions.Count}");
+            foreach (var region in enemyRegions)
+            {
+                Console.WriteLine($"[PlayState]   - {region.Id}: Type={region.Type}({(int)region.Type}) AreaTiles L={region.Area.Left} R={region.Area.Right} T={region.Area.Top} B={region.Area.Bottom}");
+                if (region.Meta != null && region.Meta.Count > 0)
+                {
+                    var metaStr = string.Join(", ", region.Meta.Select(kvp => $"{kvp.Key}={kvp.Value}"));
+                    Console.WriteLine($"[PlayState]     meta: {metaStr}");
+                }
+                else
+                {
+                    Console.WriteLine($"[PlayState]     meta: (empty)");
+                }
+            }
+            
+            // Log other region types too
+            foreach (RegionType type in System.Enum.GetValues(typeof(RegionType)))
+            {
+                if (type == RegionType.EnemySpawn) continue;
+                var regions = _regionProvider.GetRegions(type).ToList();
+                if (regions.Count > 0)
+                {
+                    Console.WriteLine($"[PlayState] {type} regions: {regions.Count}");
+                }
+            }
+
             _world.AddSystem(new EnemySpawnSystem(
                 _regionProvider,
                 _enemyFactory,

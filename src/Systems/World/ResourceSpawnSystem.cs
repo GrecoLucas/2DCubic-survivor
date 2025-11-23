@@ -100,10 +100,12 @@ namespace CubeSurvivor.Systems.World
 
         private void SpawnWood(RegionDefinition region)
         {
-            // Convert region area from tile coordinates to world pixels
-            int tileSize = 32; // Default - TODO: get from region provider if interface extended
-            Rectangle worldArea = region.ToWorldPixels(tileSize);
-            Vector2 position = GetRandomPositionInRegion(worldArea);
+            // Get random tile within region (tile coordinates)
+            int tileSize = _regionProvider.GetTileSize();
+            Point randomTile = RegionHelpers.GetRandomTileInRegion(region.Area, _random);
+            
+            // Convert to world pixel position (center of tile)
+            Vector2 position = RegionHelpers.TileToWorldCenter(randomTile, tileSize);
 
             var wood = World.CreateEntity("Wood");
             wood.AddComponent(new TransformComponent(position));
@@ -126,10 +128,12 @@ namespace CubeSurvivor.Systems.World
 
         private void SpawnGold(RegionDefinition region)
         {
-            // Convert region area from tile coordinates to world pixels
+            // Get random tile within region (tile coordinates)
             int tileSize = _regionProvider.GetTileSize();
-            Rectangle worldArea = region.ToWorldPixels(tileSize);
-            Vector2 position = GetRandomPositionInRegion(worldArea);
+            Point randomTile = RegionHelpers.GetRandomTileInRegion(region.Area, _random);
+            
+            // Convert to world pixel position (center of tile)
+            Vector2 position = RegionHelpers.TileToWorldCenter(randomTile, tileSize);
 
             var gold = World.CreateEntity("Gold");
             gold.AddComponent(new TransformComponent(position));
@@ -144,9 +148,8 @@ namespace CubeSurvivor.Systems.World
 
         private int CountResourcesInRegion(RegionDefinition region, RegionType regionType)
         {
-            // Convert region area from tile coordinates to world pixels for counting
-            int tileSize = _regionProvider.GetTileSize();
-            Rectangle worldArea = region.ToWorldPixels(tileSize);
+            // Region area is already in tile coordinates
+            Rectangle regionArea = region.Area;
             
             int count = 0;
             
@@ -168,8 +171,15 @@ namespace CubeSurvivor.Systems.World
 
                 if (transform != null && pickup != null)
                 {
-                    // Check if entity is within region bounds (worldArea is in pixels)
-                    if (worldArea.Contains(transform.Position))
+                    // Convert entity world position to tile coordinates
+                    int tileSize = _regionProvider.GetTileSize();
+                    Point entityTile = new Point(
+                        (int)(transform.Position.X / tileSize),
+                        (int)(transform.Position.Y / tileSize)
+                    );
+                    
+                    // Check if entity tile is within region bounds (regionArea is in tile coordinates)
+                    if (regionArea.Contains(entityTile))
                     {
                         if (pickup.Item != null && pickup.Item.Id == itemId)
                         {
@@ -182,12 +192,7 @@ namespace CubeSurvivor.Systems.World
             return count;
         }
 
-        private Vector2 GetRandomPositionInRegion(Rectangle area)
-        {
-            float x = area.X + (float)_random.NextDouble() * area.Width;
-            float y = area.Y + (float)_random.NextDouble() * area.Height;
-            return new Vector2(x, y);
-        }
+        // Helper method removed - using RegionHelpers.GetRandomTileInRegion instead
     }
 }
 

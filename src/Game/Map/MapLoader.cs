@@ -1,7 +1,9 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using Microsoft.Xna.Framework;
+using CubeSurvivor.Game.Map.Serialization;
 
 namespace CubeSurvivor.Game.Map
 {
@@ -28,6 +30,55 @@ namespace CubeSurvivor.Game.Map
 
                 string json = File.ReadAllText(path);
                 
+                // EXTENSIVE DEBUG LOG: Check JSON for regions
+                bool jsonHasRegions = json.Contains("\"regions\"", StringComparison.OrdinalIgnoreCase) || 
+                                      json.Contains("\"Regions\"", StringComparison.OrdinalIgnoreCase);
+                Console.WriteLine($"[MapLoader] === Loading map from {path} ===");
+                Console.WriteLine($"[MapLoader] JSON contains 'regions' key: {jsonHasRegions}");
+                
+                // Try to parse regions from JSON manually for debugging
+                try
+                {
+                    using (var doc = JsonDocument.Parse(json))
+                    {
+                        if (doc.RootElement.TryGetProperty("regions", out var regionsProp) || 
+                            doc.RootElement.TryGetProperty("Regions", out regionsProp))
+                        {
+                            Console.WriteLine($"[MapLoader] Raw regions in JSON: count={regionsProp.GetArrayLength()}");
+                            int idx = 0;
+                            foreach (var regionElem in regionsProp.EnumerateArray())
+                            {
+                                if (idx < 3) // Log first 3 for debugging
+                                {
+                                    string rid = regionElem.TryGetProperty("id", out var idProp) ? idProp.GetString() : "?";
+                                    int rtype = regionElem.TryGetProperty("type", out var typeProp) ? typeProp.GetInt32() : -1;
+                                    if (regionElem.TryGetProperty("area", out var areaProp))
+                                    {
+                                        int l = areaProp.TryGetProperty("left", out var lProp) ? lProp.GetInt32() : 
+                                                areaProp.TryGetProperty("Left", out var lProp2) ? lProp2.GetInt32() : 0;
+                                        int r = areaProp.TryGetProperty("right", out var rProp) ? rProp.GetInt32() : 
+                                                areaProp.TryGetProperty("Right", out var rProp2) ? rProp2.GetInt32() : 0;
+                                        int t = areaProp.TryGetProperty("top", out var tProp) ? tProp.GetInt32() : 
+                                                areaProp.TryGetProperty("Top", out var tProp2) ? tProp2.GetInt32() : 0;
+                                        int b = areaProp.TryGetProperty("bottom", out var bProp) ? bProp.GetInt32() : 
+                                                areaProp.TryGetProperty("Bottom", out var bProp2) ? bProp2.GetInt32() : 0;
+                                        Console.WriteLine($"[MapLoader]   JSON region[{idx}]: id={rid} type={rtype} area L={l} R={r} T={t} B={b}");
+                                    }
+                                }
+                                idx++;
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("[MapLoader]   WARNING: No 'regions' or 'Regions' property found in JSON!");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[MapLoader]   Error parsing JSON for debug: {ex.Message}");
+                }
+                
                 var options = new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true,
@@ -35,6 +86,7 @@ namespace CubeSurvivor.Game.Map
                     ReadCommentHandling = JsonCommentHandling.Skip,
                     AllowTrailingCommas = true
                 };
+                options.Converters.Add(new RectangleJsonConverter());
 
                 var map = JsonSerializer.Deserialize<MapDefinition>(json, options);
 
@@ -43,6 +95,49 @@ namespace CubeSurvivor.Game.Map
                     Console.WriteLine($"[MapLoader] Failed to deserialize: {path}");
                     return null;
                 }
+                
+                // EXTENSIVE DEBUG LOG: After deserialization
+                Console.WriteLine($"[MapLoader] Parsed regions: count={map.Regions?.Count ?? 0}");
+                
+                // Clean up invalid regions (from old saves with zeroed areas)
+                if (map.Regions != null)
+                {
+                    int beforeCount = map.Regions.Count;
+                    map.Regions = map.Regions
+                        .Where(r => r.Area.Width > 0 && r.Area.Height > 0)
+                        .ToList();
+                    int removed = beforeCount - map.Regions.Count;
+                    if (removed > 0)
+                    {
+                        Console.WriteLine($"[MapLoader]   Removed {removed} invalid regions (zero width/height)");
+                    }
+                }
+                
+                if (map.Regions != null && map.Regions.Count > 0)
+                {
+                    foreach (var region in map.Regions)
+                    {
+                        Console.WriteLine($"[MapLoader]   - id={region.Id} type={region.Type}({(int)region.Type}) areaTiles X={region.Area.X} Y={region.Area.Y} W={region.Area.Width} H={region.Area.Height}");
+                        Console.WriteLine($"[MapLoader]     areaTiles L={region.Area.Left} R={region.Area.Right} T={region.Area.Top} B={region.Area.Bottom}");
+                        
+                        // Validate area sanity
+                        if (region.Area.Width <= 0 || region.Area.Height <= 0)
+                        {
+                            Console.WriteLine($"[MapLoader]     WARNING: Invalid area size! W={region.Area.Width} H={region.Area.Height}");
+                        }
+                        if (region.Area.Left < 0 || region.Area.Top < 0 || 
+                            region.Area.Right > map.MapWidth || region.Area.Bottom > map.MapHeight)
+                        {
+                            Console.WriteLine($"[MapLoader]     WARNING: Area out of bounds! Map={map.MapWidth}x{map.MapHeight}");
+                        }
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("[MapLoader]   WARNING: Regions list is null or empty after deserialization!");
+                }
+                
+                Console.WriteLine($"[MapLoader] tileSize={map.TileSize} chunkSize={map.ChunkSize} mapSize={map.MapWidth}x{map.MapHeight}");
 
                 // Backward compatibility: ensure ItemLayers exist
                 if (map.ItemLayers == null || map.ItemLayers.Count == 0)

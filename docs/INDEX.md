@@ -99,6 +99,62 @@ Novo no projeto? Siga esta ordem:
 
 ---
 
+### Histórico e Referência
+
+#### [REFACTORING_SUMMARY.md](REFACTORING_SUMMARY.md)
+**O que é:** Resumo completo da refatoração SOLID + ECS
+**Quando usar:** Para entender as mudanças arquiteturais principais
+
+**Conteúdo:**
+- Arquivos criados/modificados
+- Princípios SOLID implementados
+- Arquitetura ECS pura
+- Métricas de impacto
+
+---
+
+#### [DEVELOPMENT_HISTORY.md](DEVELOPMENT_HISTORY.md)
+**O que é:** Histórico consolidado de refatorações e melhorias
+**Quando usar:** Para entender o que foi feito e quando
+
+**Conteúdo:**
+- Refatoração Profunda - Sistema de Mapas V2 + Editor
+- Menu ESC (Pause Menu)
+- Sistema de Construção
+- Sistema de Mapas
+- Editor de Mapas
+- Estatísticas de refatoração
+
+---
+
+### Histórico e Referência
+
+#### [REFACTORING_SUMMARY.md](REFACTORING_SUMMARY.md)
+**O que é:** Resumo completo da refatoração SOLID + ECS
+**Quando usar:** Para entender as mudanças arquiteturais principais
+
+**Conteúdo:**
+- Arquivos criados/modificados
+- Princípios SOLID implementados
+- Arquitetura ECS pura
+- Métricas de impacto
+
+---
+
+#### [DEVELOPMENT_HISTORY.md](DEVELOPMENT_HISTORY.md)
+**O que é:** Histórico consolidado de refatorações e melhorias
+**Quando usar:** Para entender o que foi feito e quando
+
+**Conteúdo:**
+- Refatoração Profunda - Sistema de Mapas V2 + Editor
+- Menu ESC (Pause Menu)
+- Sistema de Construção
+- Sistema de Mapas
+- Editor de Mapas
+- Estatísticas de refatoração
+
+---
+
 ## 🗺️ Guia de Navegação por Tarefa
 
 ### "Quero adicionar um novo inimigo"

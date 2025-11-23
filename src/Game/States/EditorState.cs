@@ -211,6 +211,21 @@ namespace CubeSurvivor.Game.States
         {
             MouseState mouseState = Mouse.GetState();
             KeyboardState keyboardState = Keyboard.GetState();
+            
+            // Debug: Log UI clicks for troubleshooting
+            bool leftJustPressedUI =
+                mouseState.LeftButton == ButtonState.Pressed &&
+                _previousMouseState.LeftButton == ButtonState.Released;
+            
+            if (leftJustPressedUI)
+            {
+                if (_leftSidebarBounds.Contains(mouseState.Position))
+                    EditorLogger.Log("Input", $"UI LMB DOWN on LeftSidebar at {mouseState.Position}");
+                else if (_rightSidebarBounds.Contains(mouseState.Position))
+                    EditorLogger.Log("Input", $"UI LMB DOWN on RightSidebar at {mouseState.Position}");
+                else if (_topBarBounds.Contains(mouseState.Position))
+                    EditorLogger.Log("Input", $"UI LMB DOWN on TopBar at {mouseState.Position}");
+            }
 
             // If save dialog is open, route keyboard input to it and block other editor input
             if (_saveDialog != null && _saveDialog.IsOpen)
@@ -228,6 +243,23 @@ namespace CubeSurvivor.Game.States
                 _pauseMenu.Toggle(_graphicsDevice.Viewport.Width, _graphicsDevice.Viewport.Height);
             }
 
+            // Delete/Backspace to delete selected region (when Region tool is active)
+            if (_context.ActiveTool == ToolType.Region && !string.IsNullOrEmpty(_context.SelectedRegionId))
+            {
+                bool deletePressed = (keyboardState.IsKeyDown(Keys.Delete) && !_previousKeyboardState.IsKeyDown(Keys.Delete)) ||
+                                     (keyboardState.IsKeyDown(Keys.Back) && !_previousKeyboardState.IsKeyDown(Keys.Back));
+                if (deletePressed)
+                {
+                    string regionId = _context.SelectedRegionId;
+                    _context.DeleteRegion(regionId);
+                    _context.SelectedRegionId = null;
+                    _context.SelectedRegionRef = null;
+                    EditorLogger.Log("EditorState", $"Deleted region: {regionId}");
+                    // Rebuild right sidebar to update region list
+                    _rightSidebar.Build(_rightSidebarBounds, _context);
+                }
+            }
+
             // Update pause menu first (blocks input when open)
             _pauseMenu.Update(gameTime, mouseState, _previousMouseState);
             
@@ -242,7 +274,22 @@ namespace CubeSurvivor.Game.States
             // Update camera (pan/zoom)
             _camera.Update(mouseState, _previousMouseState, _canvasBounds);
 
-            // Update UI
+            // Update UI FIRST - let UI consume input events
+            bool uiConsumed = false;
+            
+            // Check if mouse is over left sidebar
+            if (_leftSidebarBounds.Contains(mouseState.Position))
+            {
+                uiConsumed = true;
+                // Handle scroll wheel for region palette
+                int scrollDelta = _previousMouseState.ScrollWheelValue - mouseState.ScrollWheelValue;
+                if (scrollDelta != 0 && _context.ActiveTool == ToolType.Region)
+                {
+                    _leftSidebar.HandleScroll(scrollDelta);
+                }
+            }
+            
+            // Update UI components
             _leftSidebar.Update(gameTime, mouseState, _previousMouseState, _context);
             _rightSidebar.Update(gameTime, mouseState, _previousMouseState, _context);
             _topBar.Update(gameTime, mouseState, _previousMouseState);
@@ -250,7 +297,8 @@ namespace CubeSurvivor.Game.States
             // Canvas input (only if not over UI)
             bool isOverUI = _leftSidebar.HitTest(mouseState.Position) ||
                             _rightSidebar.HitTest(mouseState.Position) ||
-                            _topBar.HitTest(mouseState.Position);
+                            _topBar.HitTest(mouseState.Position) ||
+                            uiConsumed;
 
             if (isOverUI)
             {

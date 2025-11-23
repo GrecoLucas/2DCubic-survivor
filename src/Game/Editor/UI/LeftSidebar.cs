@@ -10,6 +10,7 @@ namespace CubeSurvivor.Game.Editor.UI
 {
     /// <summary>
     /// Left sidebar: Layer Panel + Tools + Tabs (Tiles/Blocks/Items) + Palettes
+    /// OR Region Palette when Region tool is active
     /// </summary>
     public class LeftSidebar
     {
@@ -18,6 +19,7 @@ namespace CubeSurvivor.Game.Editor.UI
         private List<UILayerRow> _layerRows = new List<UILayerRow>();
         private List<UIToggleButton> _tabButtons = new List<UIToggleButton>();
         private UIScrollGrid _palette;
+        private UIScrollList _regionPalette; // NEW: Region palette list
         private EditorContext _context;
         private int _layerPanelHeight;
         private int _toolPanelHeight;
@@ -25,9 +27,23 @@ namespace CubeSurvivor.Game.Editor.UI
         private enum PaletteTab { Tiles, Blocks, Items }
         private PaletteTab _activeTab = PaletteTab.Tiles;
 
+        private enum LeftSidebarMode { LayersPalette, RegionPalette }
+        private LeftSidebarMode _currentMode = LeftSidebarMode.LayersPalette;
+        
+        // RegionPalette state tracking (to avoid rebuilding every frame)
+        private RegionType _lastActiveRegionType;
+        private bool _lastRegionEraseMode;
+        private bool _regionPaletteDirty;
+
         public void Build(Rectangle bounds, EditorContext context)
         {
             _context = context;
+            
+            // Clear old state to prevent desync
+            _layerRows.Clear();
+            _toolButtons.Clear();
+            _tabButtons.Clear();
+            
             _panel = new UIPanel
             {
                 Bounds = bounds,
@@ -65,6 +81,8 @@ namespace CubeSurvivor.Game.Editor.UI
                     OnClick = () =>
                     {
                         context.ActiveTool = toolType;
+                        // DO NOT reset ActiveRegionTypeToPlace when switching tools
+                        // It should persist across tool switches
                         EditorLogger.Log("LeftSidebar", $"Tool selected: {toolType}");
                     }
                 };
@@ -75,6 +93,29 @@ namespace CubeSurvivor.Game.Editor.UI
             _toolPanelHeight = y - toolStartY;
             y += 10;
 
+            // ============================================================
+            // MODE-SPECIFIC CONTENT (LayersPalette or RegionPalette)
+            // ============================================================
+            BuildModeContent(bounds, ref y, buttonHeight, buttonWidth, context);
+        }
+
+        private void BuildModeContent(Rectangle bounds, ref int y, int buttonHeight, int buttonWidth, EditorContext context)
+        {
+            // Determine mode based on active tool
+            _currentMode = context.ActiveTool == ToolType.Region ? LeftSidebarMode.RegionPalette : LeftSidebarMode.LayersPalette;
+
+            if (_currentMode == LeftSidebarMode.RegionPalette)
+            {
+                BuildRegionPalette(bounds, ref y, buttonHeight, buttonWidth, context);
+            }
+            else
+            {
+                BuildLayersPalette(bounds, ref y, buttonHeight, buttonWidth, context);
+            }
+        }
+
+        private void BuildLayersPalette(Rectangle bounds, ref int y, int buttonHeight, int buttonWidth, EditorContext context)
+        {
             // ============================================================
             // TAB BUTTONS (Tiles / Blocks / Items)
             // ============================================================
@@ -124,6 +165,151 @@ namespace CubeSurvivor.Game.Editor.UI
 
             RebuildPalette(context);
             _panel.AddChild(_palette);
+        }
+
+        private void BuildRegionPalette(Rectangle bounds, ref int y, int buttonHeight, int buttonWidth, EditorContext context)
+        {
+            // ============================================================
+            // REGION MODE HEADER
+            // ============================================================
+            var headerLabel = new UILabel
+            {
+                Bounds = new Rectangle(bounds.X + 10, y, buttonWidth, 25),
+                Text = "REGION MODE",
+                TextColor = new Color(200, 200, 200)
+            };
+            _panel.AddChild(headerLabel);
+            y += 30;
+
+            // ============================================================
+            // REGION TYPE PALETTE (scrollable list)
+            // ============================================================
+            _regionPalette = new UIScrollList
+            {
+                Bounds = new Rectangle(bounds.X + 10, y, buttonWidth, bounds.Bottom - y - 10),
+                BackgroundColor = new Color(30, 30, 30, 240)
+            };
+
+            RebuildRegionPalette(context);
+            _panel.AddChild(_regionPalette);
+            
+            // Initialize last-known state to prevent unnecessary rebuilds
+            _lastActiveRegionType = context.ActiveRegionTypeToPlace;
+            _lastRegionEraseMode = context.RegionEraseMode;
+            _regionPaletteDirty = false;
+        }
+
+        private void RebuildRegionPalette(EditorContext context)
+        {
+            if (_regionPalette == null) return;
+
+            // DO NOT modify ActiveRegionTypeToPlace here - it's the single source of truth
+            // Only read it to determine which card should be highlighted
+            _regionPalette.Clear();
+            
+            // Add Eraser toggle button at the top
+            var eraserButton = new UIToggleButton
+            {
+                Bounds = new Rectangle(0, 0, _regionPalette.Bounds.Width - 20, 30),
+                Text = "Eraser",
+                Selected = context.RegionEraseMode,
+                OnClick = () =>
+                {
+                    context.RegionEraseMode = !context.RegionEraseMode;
+                    EditorLogger.Log("RegionPalette", $"RegionEraseMode={context.RegionEraseMode}");
+                    // Mark dirty for rebuild on next frame (without killing click)
+                    _regionPaletteDirty = true;
+                }
+            };
+            _regionPalette.AddItem(eraserButton);
+
+            // All region types
+            RegionType[] regionTypes = {
+                RegionType.PlayerSpawn,
+                RegionType.EnemySpawn,
+                RegionType.GoldSpawn,
+                RegionType.WoodSpawn,
+                RegionType.AppleSpawn,
+                RegionType.TreeSpawn,
+                RegionType.ItemSpawn,
+                RegionType.SafeZone,
+                RegionType.Biome
+            };
+
+            foreach (var regionType in regionTypes)
+            {
+                var rt = regionType; // ✅ capture-safe for lambda
+                
+                var defaults = RegionDefaults.GetDefaults(rt);
+                string metaSummary = RegionDefaults.GetMetaSummary(rt);
+                string description = RegionDefaults.GetDescription(rt);
+
+                // Check if this is the selected type
+                bool isSelected = context.ActiveRegionTypeToPlace == rt;
+
+                // Create a card-like panel for each region type
+                var cardPanel = new UIPanel
+                {
+                    Bounds = new Rectangle(0, 0, _regionPalette.Bounds.Width - 20, 80),
+                    BackgroundColor = isSelected 
+                        ? new Color(60, 120, 180, 255) 
+                        : new Color(40, 40, 40, 255)
+                };
+
+                // Region type name button
+                var typeButton = new UIButton
+                {
+                    Bounds = new Rectangle(5, 5, cardPanel.Bounds.Width - 10, 30),
+                    Text = FontUtil.SanitizeForFont(null, rt.ToString()),
+                    NormalColor = isSelected 
+                        ? new Color(80, 140, 200) 
+                        : new Color(50, 50, 50),
+                    HoverColor = new Color(100, 160, 220),
+                    OnClick = () =>
+                    {
+                        try
+                        {
+                            // SINGLE SOURCE OF TRUTH: Only set ActiveRegionTypeToPlace
+                            context.ActiveRegionTypeToPlace = rt;
+                            // Clear selection when changing type
+                            context.SelectedRegionId = null;
+                            context.SelectedRegionRef = null;
+                            // PendingRegionType is now an alias, so this is redundant but harmless
+                            context.PendingRegionMeta = new Dictionary<string, string>(defaults);
+                            
+                            // Mark dirty for rebuild on next frame (without killing click)
+                            _regionPaletteDirty = true;
+                            
+                            EditorLogger.Log("RegionPalette", $"CLICK -> ActiveRegionTypeToPlace = {rt} ({(int)rt})");
+                        }
+                        catch (System.Exception ex)
+                        {
+                            EditorLogger.LogError("RegionPalette", $"Error selecting region type {rt}: {ex.Message}");
+                        }
+                    }
+                };
+                cardPanel.AddChild(typeButton);
+
+                // Description label
+                var descLabel = new UILabel
+                {
+                    Bounds = new Rectangle(5, 35, cardPanel.Bounds.Width - 10, 20),
+                    Text = FontUtil.SanitizeForFont(null, description.Length > 50 ? description.Substring(0, 50) + "..." : description),
+                    TextColor = new Color(180, 180, 180)
+                };
+                cardPanel.AddChild(descLabel);
+
+                // Meta summary label
+                var metaLabel = new UILabel
+                {
+                    Bounds = new Rectangle(5, 55, cardPanel.Bounds.Width - 10, 20),
+                    Text = FontUtil.SanitizeForFont(null, metaSummary),
+                    TextColor = new Color(150, 150, 150)
+                };
+                cardPanel.AddChild(metaLabel);
+
+                _regionPalette.AddItem(cardPanel);
+            }
         }
 
         private void BuildLayerPanel(Rectangle bounds, ref int y, int buttonHeight, int buttonWidth, EditorContext context)
@@ -425,31 +611,109 @@ namespace CubeSurvivor.Game.Editor.UI
             return brushId; // Direct mapping
         }
 
+        public void HandleScroll(int scrollDelta)
+        {
+            if (_currentMode == LeftSidebarMode.RegionPalette && _regionPalette != null)
+            {
+                // Scroll the region palette list
+                _regionPalette.ScrollBy(scrollDelta);
+            }
+            else if (_currentMode == LeftSidebarMode.LayersPalette && _palette != null)
+            {
+                // Scroll the palette grid
+                _palette.ScrollBy(scrollDelta);
+            }
+        }
+
         public void Update(GameTime gameTime, MouseState mouseState, MouseState previousMouseState, EditorContext context)
         {
+            // Check if tool changed - if so, rebuild mode content
+            LeftSidebarMode newMode = context.ActiveTool == ToolType.Region ? LeftSidebarMode.RegionPalette : LeftSidebarMode.LayersPalette;
+            if (newMode != _currentMode)
+            {
+                // Mode changed - need to rebuild content
+                EditorLogger.Log("LeftSidebar", $"Mode changed: {_currentMode} -> {newMode}");
+                _currentMode = newMode;
+                
+                // Remove old mode content (palette or region palette)
+                if (_palette != null)
+                {
+                    _panel.RemoveChild(_palette);
+                    _palette = null;
+                }
+                if (_regionPalette != null)
+                {
+                    _panel.RemoveChild(_regionPalette);
+                    _regionPalette = null;
+                }
+                foreach (var tabBtn in _tabButtons)
+                {
+                    _panel.RemoveChild(tabBtn);
+                }
+                _tabButtons.Clear();
+
+                // Rebuild mode content
+                int y = _panel.Bounds.Y + 10 + _layerPanelHeight + 10 + _toolPanelHeight + 10;
+                int buttonHeight = 36;
+                int buttonWidth = _panel.Bounds.Width - 20;
+                BuildModeContent(_panel.Bounds, ref y, buttonHeight, buttonWidth, context);
+                
+                EditorLogger.Log("LeftSidebar", $"Mode content rebuilt. RegionPalette={_regionPalette != null}, Palette={_palette != null}");
+            }
+
             // Update tool selection
             foreach (var btn in _toolButtons)
             {
                 btn.Selected = (GetToolTypeForButton(btn) == context.ActiveTool);
             }
 
-            // Update tab selection
-            foreach (var tabBtn in _tabButtons)
+            // Update tab selection (only if in LayersPalette mode)
+            if (_currentMode == LeftSidebarMode.LayersPalette)
             {
-                int index = _tabButtons.IndexOf(tabBtn);
-                PaletteTab tab = (PaletteTab)index;
-                tabBtn.Selected = _activeTab == tab;
-            }
+                foreach (var tabBtn in _tabButtons)
+                {
+                    int index = _tabButtons.IndexOf(tabBtn);
+                    PaletteTab tab = (PaletteTab)index;
+                    tabBtn.Selected = _activeTab == tab;
+                }
 
-            // Update layer row states
-            foreach (var row in _layerRows)
+                // Update layer row states
+                foreach (var row in _layerRows)
+                {
+                    row.VisibilityButton.Selected = IsLayerVisible(row.LayerKind, row.LayerIndex, context);
+                    row.SelectButton.Selected = IsLayerActive(row.LayerKind, row.LayerIndex, context);
+                }
+
+                // Rebuild palette if needed
+                if (_palette != null)
+                {
+                    _palette.SelectedIndex = FindPaletteIndex(context.ActiveBrushId, _activeTab);
+                }
+            }
+            else
             {
-                row.VisibilityButton.Selected = IsLayerVisible(row.LayerKind, row.LayerIndex, context);
-                row.SelectButton.Selected = IsLayerActive(row.LayerKind, row.LayerIndex, context);
-            }
+                // RegionPalette mode - only rebuild when state actually changes
+                if (_regionPalette != null)
+                {
+                    bool needsRebuild =
+                        _regionPaletteDirty ||
+                        context.ActiveRegionTypeToPlace != _lastActiveRegionType ||
+                        context.RegionEraseMode != _lastRegionEraseMode;
 
-            // Rebuild palette if needed
-            _palette.SelectedIndex = FindPaletteIndex(context.ActiveBrushId, _activeTab);
+                    if (needsRebuild)
+                    {
+                        EditorLogger.Log("LeftSidebar",
+                            $"RegionPalette rebuild: type {_lastActiveRegionType}->{context.ActiveRegionTypeToPlace}, " +
+                            $"erase {_lastRegionEraseMode}->{context.RegionEraseMode}");
+
+                        RebuildRegionPalette(context);
+
+                        _lastActiveRegionType = context.ActiveRegionTypeToPlace;
+                        _lastRegionEraseMode = context.RegionEraseMode;
+                        _regionPaletteDirty = false;
+                    }
+                }
+            }
 
             _panel.Update(gameTime, mouseState, previousMouseState);
         }

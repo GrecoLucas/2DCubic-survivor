@@ -25,6 +25,8 @@ namespace CubeSurvivor.Systems.Core
         private float _elapsedTime;
         private float _lastLoggedMultiplier = 0.01f;
 
+        private bool _firstUpdate = true;
+
         public EnemySpawnSystem(
             ISpawnRegionProvider regionProvider,
             IEnemyFactory enemyFactory,
@@ -39,6 +41,8 @@ namespace CubeSurvivor.Systems.Core
             _biomeSystem = biomeSystem;
             _spawnTimer = 0f;
             _elapsedTime = 0f;
+            
+            Console.WriteLine("[EnemySpawnSystem] Initialized");
         }
 
         public override void Update(GameTime gameTime)
@@ -46,6 +50,13 @@ namespace CubeSurvivor.Systems.Core
             float deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
             _spawnTimer += deltaTime;
             _elapsedTime += deltaTime;
+
+            // EXTENSIVE DEBUG LOG: First update
+            if (_firstUpdate)
+            {
+                Console.WriteLine("[EnemySpawnSystem] First update tick");
+                _firstUpdate = false;
+            }
 
             // Count active enemies
             int enemyCount = World.GetEntitiesWithComponent<EnemyComponent>().Count();
@@ -64,11 +75,30 @@ namespace CubeSurvivor.Systems.Core
             var spawnRegions = _regionProvider.GetRegions(RegionType.EnemySpawn).ToList();
             if (spawnRegions.Count == 0)
             {
+                // EXTENSIVE DEBUG LOG: No regions
+                if (_elapsedTime < 1.0f) // Only log once in first second
+                {
+                    Console.WriteLine("[EnemySpawnSystem] Tick: No EnemySpawn regions found - spawn skipped");
+                }
                 return; // No spawn regions defined
             }
 
             // Calculate max enemies from regions
             int maxEnemies = CalculateMaxEnemies(spawnRegions, playerInCave);
+
+            // EXTENSIVE DEBUG LOG: Spawn decision
+            if (_spawnTimer < currentInterval)
+            {
+                // Log occasionally (every 5 seconds) when waiting
+                if ((int)_elapsedTime % 5 == 0 && _elapsedTime - (int)_elapsedTime < deltaTime)
+                {
+                    Console.WriteLine($"[EnemySpawnSystem] Tick: activeEnemies={enemyCount} maxEnemies={maxEnemies} dt={deltaTime:F2} interval={currentInterval:F2} -> waiting");
+                }
+            }
+            else if (enemyCount >= maxEnemies)
+            {
+                Console.WriteLine($"[EnemySpawnSystem] Tick: maxEnemies reached ({enemyCount}/{maxEnemies}) - spawn skipped");
+            }
 
             // Spawn if needed
             if (_spawnTimer >= currentInterval && enemyCount < maxEnemies)
@@ -83,28 +113,36 @@ namespace CubeSurvivor.Systems.Core
             // Pick a random spawn region
             var region = spawnRegions[_random.Next(spawnRegions.Count)];
 
+            // EXTENSIVE DEBUG LOG: Spawn attempt
+            Console.WriteLine($"[EnemySpawnSystem] Tick: interval reached. Picking random tile in {region.Id}");
+
             // Try to find valid position
             const int maxAttempts = 10;
             Vector2? spawnPosition = null;
 
-            // Convert region area from tile coordinates to world pixels
+            // Get random tile within region (tile coordinates)
             int tileSize = _regionProvider.GetTileSize();
-            Rectangle worldArea = region.ToWorldPixels(tileSize);
             
-            // Clamp to valid map bounds
-            worldArea.X = Math.Max(0, worldArea.X);
-            worldArea.Y = Math.Max(0, worldArea.Y);
-            
-            // Clamp to valid map bounds (if we had access to map bounds)
-            // For now, just use the converted area
+            // Clamp region to valid map bounds first
+            // TODO: Get map bounds from region provider
+            Rectangle clampedRegion = region.Area; // Assume already clamped for now
             
             for (int i = 0; i < maxAttempts; i++)
             {
-                Vector2 pos = GetRandomPositionInRegion(worldArea);
+                // Get random tile coordinate
+                Point randomTile = RegionHelpers.GetRandomTileInRegion(clampedRegion, _random);
+                
+                // Convert to world pixel position (center of tile)
+                Vector2 pos = RegionHelpers.TileToWorldCenter(randomTile, tileSize);
+                
+                Console.WriteLine($"[EnemySpawnSystem]   Attempt {i+1}: randomTile=({randomTile.X},{randomTile.Y}) worldCenterPx=({pos.X:F1},{pos.Y:F1})");
 
                 // Check biome restrictions
                 if (_biomeSystem != null && !_biomeSystem.AllowsEnemySpawnsAt(pos))
+                {
+                    Console.WriteLine($"[EnemySpawnSystem]     -> blocked by biome");
                     continue;
+                }
 
                 // Check exclusion zones
                 if (_exclusionProvider != null)
@@ -114,15 +152,22 @@ namespace CubeSurvivor.Systems.Core
                         .Any(rect => rect.Contains(pos));
                     
                     if (inExclusion)
+                    {
+                        Console.WriteLine($"[EnemySpawnSystem]     -> blocked by exclusion zone");
                         continue;
-            }
+                    }
+                }
 
                 spawnPosition = pos;
+                Console.WriteLine($"[EnemySpawnSystem]     -> spawn OK");
                 break;
             }
 
             if (!spawnPosition.HasValue)
+            {
+                Console.WriteLine($"[EnemySpawnSystem]   Failed to find free tile after {maxAttempts} attempts");
                 return; // Couldn't find valid position
+            }
 
             // Create enemy
             var enemy = _enemyFactory.CreateEnemy(World, spawnPosition.Value);
@@ -177,11 +222,15 @@ namespace CubeSurvivor.Systems.Core
             // Sum max enemies from all regions that define it
             foreach (var region in regions)
             {
-                if (region.Meta.TryGetValue("maxEnemies", out string maxStr))
+                if (region.Meta != null && region.Meta.TryGetValue("maxEnemies", out string maxStr))
                 {
-                    if (int.TryParse(maxStr, out int max))
-                {
+                    if (int.TryParse(maxStr, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out int max))
+                    {
                         total = Math.Max(total, max);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[EnemySpawnSystem] Failed to parse maxEnemies '{maxStr}' from region {region.Id}");
                     }
                 }
             }
