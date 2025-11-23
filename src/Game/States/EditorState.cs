@@ -49,6 +49,8 @@ namespace CubeSurvivor.Game.States
 
         // Map file path
         private string _mapFilePath;
+        private readonly Action _toggleFullscreenAction;
+        private CubeSurvivor.Game.Editor.UI.SaveMapDialog _saveDialog;
 
         public event Action OnReturnToMenu;
 
@@ -59,7 +61,8 @@ namespace CubeSurvivor.Game.States
             Texture2D pixelTexture,
             ChunkedTileMap map,
             MapDefinition mapDefinition,
-            string mapFilePath)
+            string mapFilePath,
+            Action toggleFullscreen = null)
         {
             _graphicsDevice = graphicsDevice ?? throw new ArgumentNullException(nameof(graphicsDevice));
             _spriteBatch = spriteBatch ?? throw new ArgumentNullException(nameof(spriteBatch));
@@ -73,6 +76,7 @@ namespace CubeSurvivor.Game.States
             };
 
             _mapFilePath = mapFilePath;
+            _toggleFullscreenAction = toggleFullscreen;
 
             // Initialize texture manager
             _textureManager = new Core.TextureManager(_graphicsDevice);
@@ -108,6 +112,13 @@ namespace CubeSurvivor.Game.States
             CalculateLayout();
             BuildUI();
             BuildPauseMenu();
+            // Create save dialog
+            _saveDialog = new CubeSurvivor.Game.Editor.UI.SaveMapDialog();
+            _saveDialog.OnSubmit += (filename) =>
+            {
+                SaveMapWithName(filename);
+            };
+            _saveDialog.OnCancel += () => { /* no-op */ };
             
             EditorLogger.Log("EditorState", $"Initialized. Map: {System.IO.Path.GetFileName(mapFilePath)}, Size: {mapDefinition.MapWidth}x{mapDefinition.MapHeight}");
         }
@@ -200,6 +211,15 @@ namespace CubeSurvivor.Game.States
         {
             MouseState mouseState = Mouse.GetState();
             KeyboardState keyboardState = Keyboard.GetState();
+
+            // If save dialog is open, route keyboard input to it and block other editor input
+            if (_saveDialog != null && _saveDialog.IsOpen)
+            {
+                _saveDialog.Update(gameTime, keyboardState, _previousKeyboardState);
+                _previousMouseState = mouseState;
+                _previousKeyboardState = keyboardState;
+                return;
+            }
 
             // ESC to toggle pause menu (detect press, not hold)
             bool escPressed = keyboardState.IsKeyDown(Keys.Escape) && !_previousKeyboardState.IsKeyDown(Keys.Escape);
@@ -325,6 +345,9 @@ namespace CubeSurvivor.Game.States
             // Draw pause menu on top of everything
             _pauseMenu.Draw(_spriteBatch, _font, _pixelTexture);
 
+            // Draw save dialog on top if open
+            _saveDialog?.Draw(_spriteBatch, _font, _pixelTexture);
+
             _spriteBatch.End();
         }
 
@@ -434,13 +457,51 @@ namespace CubeSurvivor.Game.States
             EditorLogger.Log("EditorState", $"=== SAVE REQUESTED ===");
             EditorLogger.Log("EditorState", $"Path: {_mapFilePath}");
             EditorLogger.Log("EditorState", $"Dirty: {_context.IsDirty}");
-            
+            // Open Save As dialog to allow choosing filename
             try
             {
-                // MapDefinition is already updated by tools writing to ChunkedTileMap.Definition
-                MapSaver.Save(_mapFilePath, _context.MapDefinition);
-                _context.IsDirty = false;
-                EditorLogger.Log("EditorState", "Map saved successfully!");
+                string initialName = System.IO.Path.GetFileNameWithoutExtension(_mapFilePath);
+                if (string.IsNullOrEmpty(initialName))
+                {
+                    string gen = CubeSurvivor.Game.Map.MapSaver.GenerateMapFileName();
+                    initialName = System.IO.Path.GetFileNameWithoutExtension(gen);
+                }
+
+                _saveDialog?.Open(initialName, new Rectangle(0, 0, _graphicsDevice.Viewport.Width, _graphicsDevice.Viewport.Height));
+            }
+            catch (Exception ex)
+            {
+                EditorLogger.LogError("EditorState", $"Save dialog failed: {ex.Message}");
+            }
+        }
+
+        private void SaveMapWithName(string filename)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(filename))
+                {
+                    EditorLogger.LogError("EditorState", "Invalid filename");
+                    return;
+                }
+
+                // Sanitize filename and ensure .json extension
+                foreach (char c in System.IO.Path.GetInvalidFileNameChars()) filename = filename.Replace(c, '_');
+                if (!filename.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) filename = filename + ".json";
+
+                string path = System.IO.Path.Combine("assets", "maps", filename);
+
+                bool ok = CubeSurvivor.Game.Map.MapSaver.Save(path, _context.MapDefinition);
+                if (ok)
+                {
+                    _context.IsDirty = false;
+                    _mapFilePath = path;
+                    EditorLogger.Log("EditorState", $"Map saved successfully to {path}");
+                }
+                else
+                {
+                    EditorLogger.LogError("EditorState", "MapSaver reported failure");
+                }
             }
             catch (Exception ex)
             {
@@ -457,9 +518,20 @@ namespace CubeSurvivor.Game.States
 
         private void HandleFullscreen()
         {
-            EditorLogger.Log("EditorState", "Fullscreen toggle requested (not implemented yet - needs Game1 wire-up)");
-            // TODO: Wire this through Game1 to toggle _graphics.IsFullScreen
-            // For now, just recalculate layout in case window was resized
+            EditorLogger.Log("EditorState", "Fullscreen toggle requested");
+            try
+            {
+                if (_toggleFullscreenAction != null)
+                {
+                    _toggleFullscreenAction.Invoke();
+                }
+            }
+            catch (Exception ex)
+            {
+                EditorLogger.LogError("EditorState", $"Toggle fullscreen failed: {ex.Message}");
+            }
+
+            // Recalculate layout after potential window change
             RecalculateLayout();
         }
 
@@ -474,6 +546,9 @@ namespace CubeSurvivor.Game.States
             _topBar.Build(_topBarBounds, System.IO.Path.GetFileNameWithoutExtension(_mapFilePath));
             
             // Re-wire events
+            _topBar.OnSave -= HandleSave;
+            _topBar.OnExit -= HandleExit;
+            _topBar.OnFullscreen -= HandleFullscreen;
             _topBar.OnSave += HandleSave;
             _topBar.OnExit += HandleExit;
             _topBar.OnFullscreen += HandleFullscreen;

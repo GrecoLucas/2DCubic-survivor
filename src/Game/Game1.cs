@@ -29,6 +29,7 @@ namespace CubeSurvivor
 
             _graphics.PreferredBackBufferWidth = GameConfig.ScreenWidth;
             _graphics.PreferredBackBufferHeight = GameConfig.ScreenHeight;
+            // No automatic fullscreen on start. Editor provides a fullscreen toggle.
             
             Console.WriteLine("[Game1V2] Constructor completed");
         }
@@ -180,7 +181,21 @@ namespace CubeSurvivor
                     _pixelTexture,
                     chunkedMap,
                     mapDef,
-                    mapPath
+                    mapPath,
+                    // toggle fullscreen action wired to GraphicsDeviceManager
+                    () =>
+                    {
+                        try
+                        {
+                            _graphics.IsFullScreen = !_graphics.IsFullScreen;
+                            _graphics.ApplyChanges();
+                            Console.WriteLine($"[Game1] Fullscreen toggled: {_graphics.IsFullScreen}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[Game1] Failed to toggle fullscreen: {ex.Message}");
+                        }
+                    }
                 );
                 
                 // Wire up exit event to return to main menu

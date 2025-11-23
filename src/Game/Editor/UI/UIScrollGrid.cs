@@ -108,22 +108,69 @@ namespace CubeSurvivor.Game.Editor.UI
                     DrawBorder(spriteBatch, pixelTexture, itemRect, new Color(60, 60, 60), 1);
                 }
 
-                // Label (small text below)
-                if (font != null && !string.IsNullOrEmpty(item.Label))
+                // Label: draw inside the bottom area of the item to guarantee visibility
+                if (font != null)
                 {
-                    // Sanitize text to prevent SpriteFont crashes from unsupported Unicode characters
-                    string safeLabel = FontUtil.SanitizeForFont(font, item.Label);
-                    Vector2 textSize = font.MeasureString(safeLabel);
-                    Vector2 textPos = new Vector2(
-                        itemX + (ItemSize - textSize.X) / 2,
-                        itemY + ItemSize + 2
-                    );
-                    if (textPos.Y >= globalBounds.Y && textPos.Y < globalBounds.Bottom)
+                    string labelToUse = item.Label;
+                    if (string.IsNullOrEmpty(labelToUse) && !string.IsNullOrEmpty(item.Id))
                     {
-                        spriteBatch.DrawString(font, safeLabel, textPos, Color.White);
+                        var parts = item.Id.Replace('-', ' ').Replace('_', ' ').Split(' ');
+                        for (int p = 0; p < parts.Length; p++)
+                        {
+                            if (string.IsNullOrEmpty(parts[p])) continue;
+                            parts[p] = char.ToUpper(parts[p][0]) + (parts[p].Length > 1 ? parts[p].Substring(1) : string.Empty);
+                        }
+                        labelToUse = string.Join(" ", parts);
+                    }
+
+                    if (!string.IsNullOrEmpty(labelToUse))
+                    {
+                        string safeLabel = FontUtil.SanitizeForFont(font, labelToUse);
+
+                        // Truncate label if it's wider than the item area, adding ellipsis
+                        float maxWidth = ItemSize - 6; // small padding
+                        string finalLabel = safeLabel;
+                        if (font.MeasureString(finalLabel).X > maxWidth)
+                        {
+                            finalLabel = TruncateTextToWidth(font, safeLabel, maxWidth);
+                        }
+
+                        Vector2 textSize = font.MeasureString(finalLabel);
+
+                        // Position text inside the item rectangle near the bottom
+                        Vector2 textPos = new Vector2(
+                            itemX + (ItemSize - textSize.X) / 2,
+                            itemY + ItemSize - textSize.Y - 4
+                        );
+
+                        // Ensure the text is at least within the visible control vertically
+                        if (textPos.Y + textSize.Y >= globalBounds.Y && textPos.Y < globalBounds.Bottom)
+                        {
+                            spriteBatch.DrawString(font, finalLabel, textPos, Color.White);
+                        }
                     }
                 }
             }
+        }
+
+        private static string TruncateTextToWidth(SpriteFont font, string text, float maxWidth)
+        {
+            if (string.IsNullOrEmpty(text) || font == null) return text;
+            if (font.MeasureString(text).X <= maxWidth) return text;
+
+            const string ellipsis = "...";
+            int lo = 0, hi = text.Length;
+            while (lo < hi)
+            {
+                int mid = (lo + hi) / 2;
+                string sub = text.Substring(0, mid) + ellipsis;
+                if (font.MeasureString(sub).X > maxWidth) hi = mid;
+                else lo = mid + 1;
+            }
+
+            int cut = Math.Max(0, lo - 1);
+            string result = text.Substring(0, cut) + ellipsis;
+            return result;
         }
 
         protected void DrawBorder(SpriteBatch sb, Texture2D px, Rectangle rect, Color color, int width)
