@@ -27,6 +27,15 @@ namespace CubeSurvivor.Entities
         /// <param name="height">Altura do bloco</param>
         /// <returns>A entidade criada</returns>
         Entity CreateWall(IGameWorld world, Vector2 position, float width = 50f, float height = 50f);
+        
+        /// <summary>
+        /// Cria um bloco de rocha na posição especificada.
+        /// </summary>
+        /// <param name="world">O mundo do jogo</param>
+        /// <param name="position">Posição central do bloco de rocha</param>
+        /// <param name="size">Tamanho do bloco</param>
+        /// <returns>A entidade criada</returns>
+        Entity CreateRock(IGameWorld world, Vector2 position, float size = 50f);
     }
 }
 

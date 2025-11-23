@@ -54,6 +54,25 @@ namespace CubeSurvivor.Entities
 
             return wall;
         }
+        
+        public Entity CreateRock(IGameWorld world, Vector2 position, float size = 50f)
+        {
+            var rock = world.CreateEntity("Rock");
+
+            // Transformação e visual
+            rock.AddComponent(new TransformComponent(position));
+            rock.AddComponent(new SpriteComponent(new Color(105, 105, 105), size, size, RenderLayer.GroundEffects)); // Cor cinza pedra
+
+            // Componentes de física e colisão
+            rock.AddComponent(new ColliderComponent(size, size, ColliderTag.Default));
+            rock.AddComponent(new ObstacleComponent(
+                blocksMovement: true,
+                blocksBullets: true,
+                isDestructible: false // Rochas são indestrutíveis
+            ));
+
+            return rock;
+        }
     }
 }
 

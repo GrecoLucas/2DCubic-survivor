@@ -11,6 +11,8 @@ namespace CubeSurvivor
     public sealed class CameraService
     {
         public Matrix Transform { get; private set; } = Matrix.Identity;
+        public int ScreenWidth => _screenWidth;
+        public int ScreenHeight => _screenHeight;
 
         private readonly int _screenWidth;
         private readonly int _screenHeight;

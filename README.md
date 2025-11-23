@@ -1,5 +1,6 @@
 # Cube Survivor
 
+<<<<<<< HEAD
 Jogo 2D top-down desenvolvido com MonoGame seguindo os princípios **SOLID** e arquitetura **Entity-Component-System (ECS)** pura.
 
 ## 🎯 Características Principais
@@ -230,35 +231,163 @@ Este projeto está sob a licença MIT.
 - MonoGame Framework
 - Comunidade ECS
 - Princípios SOLID de Robert C. Martin
+=======
+A top-down survival game built with MonoGame featuring an in-game map editor, chunked world streaming, and data-driven gameplay.
 
-- **W** - Mover para cima
-- **S** - Mover para baixo
-- **A** - Mover para esquerda
-- **D** - Mover para direita
+## Features
 
-## Arquitetura ECS
+### 🎮 Gameplay
+- Top-down survival mechanics
+- Enemy waves and resource gathering
+- Inventory and crafting system
+- Region-based spawning (no hardcoding)
+- Huge maps with chunk streaming
 
-### Componentes
-- **TransformComponent**: Posição, rotação e escala
-- **SpriteComponent**: Cor e tamanho visual
-- **VelocityComponent**: Velocidade de movimento
-- **InputComponent**: Marca entidades controláveis pelo jogador
+### 🗺️ Map System
+- **Chunked storage** for massive worlds
+- **Multi-layer** tiles and blocks
+- **Region-based spawns** (Player, Enemy, Wood, Gold, SafeZones)
+- **JSON serialization** for easy editing
+- **Backward compatible** with legacy maps
 
-### Sistemas
-- **InputSystem**: Processa input do teclado e atualiza velocidades
-- **MovementSystem**: Aplica velocidade às posições
-- **RenderSystem**: Renderiza todas as entidades visíveis
+### ✏️ In-Game Editor
+- **Mouse-first UI** with left/right sidebars
+- **Tools:** Brush, Eraser, Box Fill, Flood Fill, Picker, Regions
+- **Live editing** with instant feedback
+- **Undo/Redo** system (Ctrl+Z/Y)
+- **Save & Exit** button
+- **Region management** (create, focus, delete)
 
-### Entidades
-- **Player**: Quadrado azul controlado pelo jogador
+## Quick Start
 
-## Próximas Expansões Possíveis
+```bash
+# Build
+dotnet build CubeSurvivor.csproj
 
-- Inimigos e IA
-- Sistema de colisão
-- Sistema de combate
-- Power-ups e itens
-- Sistema de câmera
-- Efeitos visuais e partículas
-- Sistema de ondas/waves
-- Pontuação e UI
+# Run
+dotnet run --project CubeSurvivor.csproj
+```
+
+## Controls
+
+### Main Menu
+- **Mouse-only** - Click buttons to navigate
+- **Fullscreen** toggle in bottom-right
+- **Play/Edit/New/Exit** buttons
+
+### Editor
+- **Left Sidebar:** Tools, Mode (Tiles/Blocks), Palette, Region Types
+- **Right Sidebar:** Layers list, Regions list (with Focus/Delete)
+- **Top Center:** "SAVE & EXIT" button
+- **Left Mouse:** Paint/Place
+- **Right Mouse:** Pan camera
+- **WASD:** Move camera
+- **Mouse Wheel:** Zoom
+- **ESC:** Save and exit to menu
+- **S:** Quick save
+- **Ctrl+Z/Y:** Undo/Redo
+
+### Gameplay
+- **WASD:** Move
+- **Mouse:** Aim
+- **Left Click:** Shoot
+- **E:** Pickup items
+- **I:** Inventory
+
+## Project Structure
+
+```
+src/
+├── Game/
+│   ├── Map/              # Map definition, loader, saver, streaming
+│   ├── Editor/           # In-game editor (state, sidebar, tools)
+│   ├── States/           # Game states (Menu, Play, Editor)
+│   ├── Camera/           # Camera system
+│   └── Configuration/    # Game config
+├── Systems/              # ECS systems
+│   ├── Core/             # Spawn, collision, etc.
+│   ├── Rendering/        # Map & entity rendering
+│   └── World/            # Resource spawns, harvesting
+├── Components/           # ECS components
+├── Entities/             # Entity factories
+├── Inventory/            # Inventory system
+└── Core/                 # ECS core, spatial hash
+```
+
+## Map Format
+>>>>>>> c4d07b7 (new editor)
+
+Maps are stored as JSON in `assets/maps/`:
+
+```json
+{
+  "mapWidthTiles": 256,
+  "mapHeightTiles": 256,
+  "tileSizePx": 128,
+  "chunkSizeTiles": 64,
+  "tileLayers": [...],
+  "blockLayers": [...],
+  "regions": [
+    {
+      "id": "player_spawn_1",
+      "type": "PlayerSpawn",
+      "rectPx": [10000, 10000, 800, 800]
+    }
+  ]
+}
+```
+
+### Block Types
+- `Empty` (0)
+- `Wall` (1)
+- `Crate` (2)
+- `Tree` (3)
+- `Rock` (4)
+
+### Region Types
+- `PlayerSpawn` - Where player starts
+- `EnemySpawn` - Enemy spawning areas
+- `WoodSpawn` - Wood resource spawning
+- `GoldSpawn` - Gold resource spawning
+- `SafeZone` - Safe areas (no enemies)
+
+## Architecture
+
+### ECS (Entity-Component-System)
+Clean separation of data (Components) and logic (Systems).
+
+### Chunk Streaming
+Large maps divided into chunks. Only visible chunks are rendered. Blocks near camera spawn as ECS entities.
+
+### Data-Driven
+All spawns, regions, and map data loaded from JSON. Zero hardcoding.
+
+### SOLID Principles
+- Single Responsibility
+- Open/Closed
+- Liskov Substitution
+- Interface Segregation
+- Dependency Inversion
+
+## Development
+
+### Adding New Block Types
+1. Add to `BlockType` enum in `MapDefinition.cs`
+2. Add sprite/color in rendering system
+3. Add to editor palette in `LeftSidebar.cs`
+4. Update `WorldObjectFactory` if needed
+
+### Adding New Region Types
+1. Add to `RegionType` enum in `MapDefinition.cs`
+2. Add spawn system logic if needed
+3. Add to editor region picker in `LeftSidebar.cs`
+
+## License
+
+(Your license here)
+
+## Credits
+
+Built with:
+- MonoGame
+- C# / .NET 8

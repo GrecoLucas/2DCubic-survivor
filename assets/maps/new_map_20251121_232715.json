@@ -1,0 +1,55 @@
+{
+  "mapWidth": 256,
+  "mapHeight": 256,
+  "chunkSize": 64,
+  "tileSize": 128,
+  "tileLayers": [
+    {
+      "name": "Ground",
+      "isCollisionLayer": false,
+      "chunks": {}
+    }
+  ],
+  "blockLayers": [
+    {
+      "name": "Blocks",
+      "isCollisionLayer": true,
+      "chunks": {}
+    }
+  ],
+  "regions": [
+    {
+      "id": "player_spawn_1",
+      "type": 0,
+      "area": {
+        "left": 15984,
+        "right": 16784,
+        "top": 15984,
+        "bottom": 16784,
+        "isEmpty": false,
+        "location": {},
+        "size": {},
+        "center": {}
+      },
+      "meta": {}
+    },
+    {
+      "id": "enemy_spawn_1",
+      "type": 1,
+      "area": {
+        "left": 0,
+        "right": 32768,
+        "top": 0,
+        "bottom": 32768,
+        "isEmpty": false,
+        "location": {},
+        "size": {},
+        "center": {}
+      },
+      "meta": {
+        "maxEnemies": "100",
+        "intervalSeconds": "2"
+      }
+    }
+  ]
+}

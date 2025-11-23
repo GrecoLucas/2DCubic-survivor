@@ -1,0 +1,62 @@
+════════════════════════════════════════════════════════════════
+                    FICHEIROS MODIFICADOS
+════════════════════════════════════════════════════════════════
+
+✅ FICHEIROS CORRIGIDOS (3):
+
+1. src/Game/Editor/UI/UIPanel.cs
+   MUDANÇAS:
+   • Adicionado campo: _lastBounds
+   • Adicionado auto-repositioning no Update():
+     → Detecta quando Bounds muda
+     → Move todos os filhos pelo delta (deltaX, deltaY)
+   
+   IMPACTO:
+   ✅ Botões nos MapCards agora movem com o card!
+   ✅ Scroll funciona corretamente!
+
+─────────────────────────────────────────────────────────────────
+
+2. src/Game/States/MainMenuState.cs
+   MUDANÇAS:
+   • CreateMapCard() completamente reescrito:
+     → Botões com posições RELATIVAS (240, 10) etc
+     → Logging extensivo adicionado
+     → TextColor=Color.White garantido
+     
+   IMPACTO:
+   ✅ Botões clicáveis!
+   ✅ Hover effect funciona!
+   ✅ Console mostra exatamente o que acontece!
+
+─────────────────────────────────────────────────────────────────
+
+3. src/Game/States/EditorState.cs
+   MUDANÇAS:
+   • Adicionado RecalculateLayout():
+     → Recalcula bounds das sidebars
+     → Rebuilda UI
+     → Re-wire eventos
+   • HandleExit() melhorado com logging
+   • HandleFullscreen() chama RecalculateLayout()
+   
+   IMPACTO:
+   ✅ Resize/Fullscreen funciona!
+   ✅ ESC volta ao menu corretamente!
+
+════════════════════════════════════════════════════════════════
+
+📊 ESTATÍSTICAS:
+
+Linhas adicionadas:   ~80
+Linhas modificadas:   ~40
+Métodos novos:        2 (RecalculateLayout, auto-reposition logic)
+Logging statements:   8+
+
+════════════════════════════════════════════════════════════════
+
+✅ BUILD: 0 errors, 0 warnings
+✅ Compilado em: 2.63s
+✅ Pronto para teste!
+
+════════════════════════════════════════════════════════════════

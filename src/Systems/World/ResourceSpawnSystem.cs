@@ -1,184 +1,182 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using CubeSurvivor.Components;
 using CubeSurvivor.Core;
-using CubeSurvivor.Entities;
+using CubeSurvivor.Components;
+using CubeSurvivor.Game.Map;
 using Microsoft.Xna.Framework;
 
-namespace CubeSurvivor.Systems
+namespace CubeSurvivor.Systems.World
 {
     /// <summary>
-    /// Sistema responsável por spawnar recursos (madeira) periodicamente no mapa.
+    /// V2 of Resource Spawn System using region-based spawning.
+    /// Spawns wood, gold, and other resources in designated regions.
     /// </summary>
     public sealed class ResourceSpawnSystem : GameSystem
     {
-        private readonly WoodEntityFactory _woodFactory;
-        private readonly GoldEntityFactory _goldFactory;
-        private readonly LevelDefinition _levelDefinition;
-        private readonly CubeSurvivor.Systems.World.BiomeSystem _biomeSystem;
+        private readonly Systems.Core.ISpawnRegionProvider _regionProvider;
+        private readonly TextureManager _textureManager;
         private readonly Random _random = new Random();
 
-        private float _timer;
+        // Track spawn timers per region type
+        private readonly Dictionary<string, float> _regionTimers = new Dictionary<string, float>();
 
-        public ResourceSpawnSystem(LevelDefinition levelDefinition, TextureManager textureManager = null, CubeSurvivor.Systems.World.BiomeSystem biomeSystem = null)
+        public ResourceSpawnSystem(
+            Systems.Core.ISpawnRegionProvider regionProvider,
+            TextureManager textureManager)
         {
-            _levelDefinition = levelDefinition ?? throw new ArgumentNullException(nameof(levelDefinition));
-            _woodFactory = new WoodEntityFactory();
-            _goldFactory = new GoldEntityFactory();
-            _biomeSystem = biomeSystem;
-            if (textureManager != null)
-            {
-                _woodFactory.SetTextureManager(textureManager);
-                _goldFactory.SetTextureManager(textureManager);
-            }
+            _regionProvider = regionProvider ?? throw new ArgumentNullException(nameof(regionProvider));
+            _textureManager = textureManager ?? throw new ArgumentNullException(nameof(textureManager));
         }
 
         public override void Update(GameTime gameTime)
         {
-            _timer += (float)gameTime.ElapsedGameTime.TotalSeconds;
-            if (_timer < GameConfig.WoodSpawnIntervalSeconds)
-            {
-                return;
-            }
+            float deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            _timer = 0f;
+            // Process wood spawn regions
+            ProcessSpawnRegions(RegionType.WoodSpawn, deltaTime, SpawnWood);
 
-            // Verificar se há regiões de spawn configuradas no JSON
-            if (_levelDefinition.WoodSpawnRegions.Count == 0)
-            {
-                return;
-            }
+            // Process gold spawn regions
+            ProcessSpawnRegions(RegionType.GoldSpawn, deltaTime, SpawnGold);
 
-            foreach (var region in _levelDefinition.WoodSpawnRegions)
-            {
-                SpawnWoodInRegion(region);
-            }
+            // Process tree spawn regions (if needed)
+            // Trees are typically handled by BlockLayer, but we could spawn pickup items here
+        }
 
-            // Spawn de ouro
-            if (_levelDefinition.GoldSpawnRegions.Count > 0)
+        private void ProcessSpawnRegions(
+            RegionType regionType,
+            float deltaTime,
+            Action<RegionDefinition> spawnAction)
+        {
+            var regions = _regionProvider.GetRegions(regionType).ToList();
+
+            foreach (var region in regions)
             {
-                foreach (var gregion in _levelDefinition.GoldSpawnRegions)
+                string timerKey = region.Id ?? $"{regionType}_{regions.IndexOf(region)}";
+
+                // Initialize timer if needed
+                if (!_regionTimers.ContainsKey(timerKey))
                 {
-                    SpawnGoldInRegion(gregion);
+                    _regionTimers[timerKey] = 0f;
+                }
+
+                _regionTimers[timerKey] += deltaTime;
+
+                // Get spawn interval from region metadata
+                float interval = 5f; // Default
+                if (region.Meta.TryGetValue("intervalSeconds", out string intervalStr))
+                {
+                    if (float.TryParse(intervalStr, out float parsed))
+                    {
+                        interval = parsed;
+                    }
+                }
+
+                // Check if it's time to spawn
+                if (_regionTimers[timerKey] >= interval)
+                {
+                    _regionTimers[timerKey] = 0f;
+
+                    // Get max active count
+                    int maxActive = 10; // Default
+                    if (region.Meta.TryGetValue("maxActive", out string maxStr))
+                    {
+                        if (int.TryParse(maxStr, out int parsed))
+                        {
+                            maxActive = parsed;
+                        }
+                    }
+
+                    // Count existing resources in this region
+                    int currentCount = CountResourcesInRegion(region, regionType);
+
+                    if (currentCount < maxActive)
+                    {
+                        spawnAction(region);
+                    }
                 }
             }
         }
 
-        private void SpawnWoodInRegion(WoodSpawnRegionDefinition region)
+        private void SpawnWood(RegionDefinition region)
         {
-            // Contar madeira ativa nesta região
-            var pickups = World.GetEntitiesWithComponent<PickupComponent>()
-                .Where(e =>
-                {
-                    var p = e.GetComponent<PickupComponent>();
-                    var t = e.GetComponent<TransformComponent>();
+            Vector2 position = GetRandomPositionInRegion(region.Area);
 
-                    if (p == null || t == null || p.Item == null)
-                        return false;
-
-                    return p.Item.Id == "wood" && region.Area.Contains(t.Position);
-                })
-                .ToList();
-
-            if (pickups.Count >= region.MaxActiveWood)
+            var wood = World.CreateEntity("Wood");
+            wood.AddComponent(new TransformComponent(position));
+            
+            var woodTexture = _textureManager.GetTexture("wood");
+            if (woodTexture != null)
             {
-                return;
+                wood.AddComponent(new SpriteComponent(woodTexture, 32, 32, null, RenderLayer.GroundItems));
+            }
+            else
+            {
+                wood.AddComponent(new SpriteComponent(new Color(139, 90, 43), 32, 32, RenderLayer.GroundItems));
             }
 
-            // Tentar spawnar nova madeira
-            for (int attempt = 0; attempt < 10; attempt++)
-            {
-                float x = _random.Next(region.Area.Left, region.Area.Right);
-                float y = _random.Next(region.Area.Top, region.Area.Bottom);
-                var pos = new Vector2(x, y);
-
-                // Verificar se a posição está livre
-                if (!IsPositionFree(pos))
-                    continue;
-
-                // Se temos BiomeSystem e a posição não pertence à floresta, não spawnar
-                if (_biomeSystem != null)
-                {
-                    var biome = _biomeSystem.GetBiomeAt(pos);
-                    if (biome == null || biome.Type != CubeSurvivor.World.Biomes.BiomeType.Forest)
-                        continue;
-                }
-
-                _woodFactory.CreateWood(World, pos, 1);
-                System.Console.WriteLine($"[ResourceSpawn] ✓ Madeira spawn em ({x:F0}, {y:F0})");
-                break;
-            }
+            wood.AddComponent(new ColliderComponent(32, 32, ColliderTag.Pickup));
+            
+            var woodItem = new Inventory.Items.Resources.WoodItem();
+            wood.AddComponent(new PickupComponent(woodItem, quantity: _random.Next(1, 4)));
         }
 
-        private void SpawnGoldInRegion(GoldSpawnRegionDefinition region)
+        private void SpawnGold(RegionDefinition region)
         {
-            // Contar ouro ativo nesta região
-            var pickups = World.GetEntitiesWithComponent<PickupComponent>()
-                .Where(e =>
-                {
-                    var p = e.GetComponent<PickupComponent>();
-                    var t = e.GetComponent<TransformComponent>();
+            Vector2 position = GetRandomPositionInRegion(region.Area);
 
-                    if (p == null || t == null || p.Item == null)
-                        return false;
-
-                    return p.Item.Id == "gold" && region.Area.Contains(t.Position);
-                })
-                .ToList();
-
-            if (pickups.Count >= region.MaxActiveGold)
-            {
-                return;
-            }
-
-            // Tentar spawnar novo ouro
-            for (int attempt = 0; attempt < 10; attempt++)
-            {
-                float x = _random.Next(region.Area.Left, region.Area.Right);
-                float y = _random.Next(region.Area.Top, region.Area.Bottom);
-                var pos = new Vector2(x, y);
-
-                if (!IsPositionFree(pos))
-                    continue;
-
-                if (_biomeSystem != null)
-                {
-                    var biome = _biomeSystem.GetBiomeAt(pos);
-                    // Ouro só em cavernas
-                    if (biome == null || biome.Type != CubeSurvivor.World.Biomes.BiomeType.Cave)
-                        continue;
-
-                    // Usar goldDensity como chance percentual
-                    if (biome.GoldDensity <= 0)
-                        continue;
-
-                    int roll = _random.Next(0, 100);
-                    if (roll >= biome.GoldDensity)
-                        continue;
-                }
-
-                _goldFactory.CreateGold(World, pos, 1);
-                System.Console.WriteLine($"[ResourceSpawn] ✓ Ouro spawn em ({x:F0}, {y:F0})");
-                break;
-            }
+            var gold = World.CreateEntity("Gold");
+            gold.AddComponent(new TransformComponent(position));
+            
+            // Gold as a golden yellow pickup
+            gold.AddComponent(new SpriteComponent(new Color(255, 215, 0), 28, 28, RenderLayer.GroundItems));
+            gold.AddComponent(new ColliderComponent(28, 28, ColliderTag.Pickup));
+            
+            var goldItem = new Inventory.Items.Resources.GoldItem();
+            gold.AddComponent(new PickupComponent(goldItem, quantity: _random.Next(1, 3)));
         }
 
-        private bool IsPositionFree(Vector2 position)
+        private int CountResourcesInRegion(RegionDefinition region, RegionType regionType)
         {
-            // Verificar se não há colliders no local
-            foreach (var e in World.GetEntitiesWithComponent<ColliderComponent>())
+            int count = 0;
+            
+            // Determine what item ID to look for based on region type
+            string itemId = regionType switch
             {
-                var c = e.GetComponent<ColliderComponent>();
-                var t = e.GetComponent<TransformComponent>();
-                if (c == null || t == null)
-                    continue;
+                RegionType.WoodSpawn => "wood",
+                RegionType.GoldSpawn => "gold",
+                _ => null
+            };
 
-                var bounds = c.GetBounds(t.Position);
-                if (bounds.Contains(position))
-                    return false;
+            if (itemId == null)
+                return 0;
+
+            foreach (var entity in World.GetEntitiesWithComponent<PickupComponent>())
+            {
+                var transform = entity.GetComponent<TransformComponent>();
+                var pickup = entity.GetComponent<PickupComponent>();
+
+                if (transform != null && pickup != null)
+                {
+                    // Check if entity is within region bounds
+                    if (region.Area.Contains(transform.Position))
+                    {
+                        if (pickup.Item != null && pickup.Item.Id == itemId)
+                        {
+                            count++;
+                        }
+                    }
+                }
             }
 
-            return true;
+            return count;
+        }
+
+        private Vector2 GetRandomPositionInRegion(Rectangle area)
+        {
+            float x = area.X + (float)_random.NextDouble() * area.Width;
+            float y = area.Y + (float)_random.NextDouble() * area.Height;
+            return new Vector2(x, y);
         }
     }
 }

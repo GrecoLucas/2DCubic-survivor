@@ -12,10 +12,17 @@ namespace CubeSurvivor.Inventory.Components
         public IInventory Inventory { get; }
         public bool IsUIOpen { get; set; }
         
+        /// <summary>
+        /// The ID of the tool currently equipped (e.g., "hammer").
+        /// Null means hands are empty and can harvest trees.
+        /// </summary>
+        public string EquippedToolId { get; set; }
+        
         public InventoryComponent(IInventory inventory)
         {
             Inventory = inventory ?? throw new System.ArgumentNullException(nameof(inventory));
             IsUIOpen = false;
+            EquippedToolId = null;
         }
         
         public void ToggleUI()
