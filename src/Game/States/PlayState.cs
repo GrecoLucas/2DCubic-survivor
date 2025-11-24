@@ -303,7 +303,7 @@ namespace CubeSurvivor.Game.States
             _safeZoneManager = new SafeZoneManager(new WorldObjectFactory());
             
             // Initialize factories
-            var weaponVisualFactory = new WeaponVisualFactory();
+            var weaponVisualFactory = new WeaponVisualFactory(_textureManager);
             _playerFactory = new PlayerFactory();
             if (_playerFactory is PlayerFactory pf)
             {
@@ -312,7 +312,7 @@ namespace CubeSurvivor.Game.States
             }
             
             _enemyFactory = new EnemyFactory(_textureManager); // Pass TextureManager for texture loading
-            _bulletFactory = new BulletFactory();
+            _bulletFactory = new BulletFactory(_textureManager);
             _worldObjectFactory = new WorldObjectFactory();
             
             // Load textures
@@ -348,6 +348,7 @@ namespace CubeSurvivor.Game.States
                 _textureManager.LoadTexture("hammer", "hammer.png");
                 _textureManager.LoadTexture("wood", "wood.png");
                 _textureManager.LoadTexture("gold", "gold.png");
+                _textureManager.LoadTexture("bullet", "bullet.png"); // Bullet texture (optional, falls back to yellow)
                 
                 Console.WriteLine("[PlayState] Textures loaded (including variants)");
                 

@@ -18,6 +18,13 @@ namespace CubeSurvivor.Entities
     /// </summary>
     public sealed class WeaponVisualFactory : IWeaponVisualFactory
     {
+        private readonly TextureManager _textureManager;
+
+        public WeaponVisualFactory(TextureManager textureManager = null)
+        {
+            _textureManager = textureManager;
+        }
+
         public Entity CreateGunVisual(IGameWorld world, Entity player, Texture2D gunTexture)
         {
             var gunEnt = world.CreateEntity("GunVisual");
@@ -25,8 +32,16 @@ namespace CubeSurvivor.Entities
             var playerTransform = player.GetComponent<TransformComponent>();
             gunEnt.AddComponent(new TransformComponent(playerTransform.Position));
             
-            // Gun visual: Black rectangle (texture is only for inventory/ground)
-            gunEnt.AddComponent(new SpriteComponent(Color.Black, 25f, 6f, RenderLayer.Entities));
+            // Gun visual: Use texture if available, fallback to color
+            Texture2D visualTexture = gunTexture ?? _textureManager?.GetTexture("gun");
+            if (visualTexture != null)
+            {
+                gunEnt.AddComponent(new SpriteComponent(visualTexture, 25f, 6f, null, RenderLayer.Entities));
+            }
+            else
+            {
+                gunEnt.AddComponent(new SpriteComponent(Color.Black, 25f, 6f, RenderLayer.Entities));
+            }
             
             // Attach to player's right hand
             gunEnt.AddComponent(new AttachmentComponent(player, AttachmentSocketId.RightHand));

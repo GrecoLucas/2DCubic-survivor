@@ -11,6 +11,7 @@ namespace CubeSurvivor.Systems
     {
         private readonly SpriteBatch _spriteBatch;
         private Texture2D _pixelTexture;
+        private readonly System.Collections.Generic.HashSet<int> _loggedMissingTextures = new System.Collections.Generic.HashSet<int>();
 
         public RenderSystem(SpriteBatch spriteBatch)
         {
@@ -88,13 +89,17 @@ namespace CubeSurvivor.Systems
                 }
                 
                 // Debug logging for missing textures (only log once per entity to avoid spam)
-                if (tex == _pixelTexture)
+                // Only log if sprite was created with color (Texture == null) but we're using pixel fallback
+                // This helps identify entities that should have textures but don't
+                if (tex == _pixelTexture && sprite.Texture == null)
                 {
-                    // Only log if we expected a texture but got pixel fallback
-                    if ((animator != null && animator.Enabled && animator.GetCurrentFrame() == null && sprite.Texture == null) ||
-                        (animator == null && sprite.Texture == null))
+                    // Only log once per entity hash to avoid spam
+                    int entityHash = entity.GetHashCode();
+                    if (!_loggedMissingTextures.Contains(entityHash))
                     {
-                        Console.WriteLine($"[RenderSystem] ⚠ entity={entity.GetHashCode()} using {texSource} (no texture available)");
+                        _loggedMissingTextures.Add(entityHash);
+                        string entityName = entity.Name ?? "Unknown";
+                        Console.WriteLine($"[RenderSystem] ⚠ entity={entityHash} name={entityName} using {texSource} (no texture, Color={sprite.Color})");
                     }
                 }
 
