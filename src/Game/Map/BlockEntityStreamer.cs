@@ -16,6 +16,11 @@ namespace CubeSurvivor.Game.Map
         private readonly IWorldObjectFactory _factory;
         private readonly IGameWorld _world;
         private readonly CameraService _cameraService;
+        private readonly TextureManager _textureManager;
+        private readonly TileVisualCatalog _catalog;
+        private readonly IVariantResolver _variantResolver;
+        private readonly int _worldSeed;
+        private int _treeLogCount = 0;
 
         // Key: (layerIndex, tx, ty) -> spawned entity
         private readonly Dictionary<(int, int, int), Entity> _spawnedBlocks = new();
@@ -27,12 +32,20 @@ namespace CubeSurvivor.Game.Map
             ChunkedTileMap map,
             IWorldObjectFactory factory,
             IGameWorld world,
-            CameraService cameraService)
+            CameraService cameraService,
+            TextureManager textureManager = null,
+            TileVisualCatalog catalog = null,
+            IVariantResolver variantResolver = null,
+            int worldSeed = 0)
         {
             _map = map ?? throw new ArgumentNullException(nameof(map));
             _factory = factory ?? throw new ArgumentNullException(nameof(factory));
             _world = world ?? throw new ArgumentNullException(nameof(world));
             _cameraService = cameraService ?? throw new ArgumentNullException(nameof(cameraService));
+            _textureManager = textureManager;
+            _catalog = catalog;
+            _variantResolver = variantResolver;
+            _worldSeed = worldSeed;
         }
 
         /// <summary>
@@ -165,13 +178,55 @@ namespace CubeSurvivor.Game.Map
 
             float treeSize = _map.TileSize;
 
-            tree.AddComponent(new Components.TransformComponent(centerPos));
-            tree.AddComponent(new Components.SpriteComponent(
-                new Color(34, 139, 34), // Forest green
-                treeSize,
-                treeSize,
-                Components.RenderLayer.GroundEffects
-            ));
+            // Calculate tile position for variant resolution
+            int tileX = (int)(centerPos.X / treeSize);
+            int tileY = (int)(centerPos.Y / treeSize);
+            Point tilePos = new Point(tileX, tileY);
+
+            // Transform with potential rotation
+            var transform = new Components.TransformComponent(centerPos);
+            tree.AddComponent(transform);
+
+            // Try to resolve texture using VariantResolver
+            Microsoft.Xna.Framework.Graphics.Texture2D treeTexture = null;
+            float rotation = 0f;
+            
+            if (_catalog != null && _variantResolver != null)
+            {
+                if (_catalog.TryResolveFromBaseKey("tree", tilePos, 0, _variantResolver, _worldSeed, out var tex, out var rot))
+                {
+                    treeTexture = tex;
+                    rotation = rot;
+                    transform.Rotation = rotation;
+                }
+            }
+            
+            // Fallback to texture manager if resolver didn't work
+            if (treeTexture == null && _textureManager != null)
+            {
+                treeTexture = _textureManager.GetTexture("tree1"); // Default to tree1
+            }
+
+            // Create sprite component with texture or color fallback
+            if (treeTexture != null)
+            {
+                tree.AddComponent(new Components.SpriteComponent(treeTexture, treeSize, treeSize, null, Components.RenderLayer.GroundEffects));
+                // Debug log (limited to avoid spam)
+                if (_treeLogCount++ < 3)
+                {
+                    System.Console.WriteLine($"[BlockEntityStreamer] Tree at ({centerPos.X:F1},{centerPos.Y:F1}) tile=({tilePos.X},{tilePos.Y}) resolved texture rot={rotation * 180f / System.MathF.PI:F1}°");
+                }
+            }
+            else
+            {
+                tree.AddComponent(new Components.SpriteComponent(
+                    new Color(34, 139, 34), // Forest green
+                    treeSize,
+                    treeSize,
+                    Components.RenderLayer.GroundEffects
+                ));
+                System.Console.WriteLine($"[BlockEntityStreamer] ⚠ Tree at ({centerPos.X:F1},{centerPos.Y:F1}) using color fallback (texture not found)");
+            }
 
             tree.AddComponent(new Components.ColliderComponent(treeSize, treeSize, Components.ColliderTag.Tree));
             tree.AddComponent(new Components.ObstacleComponent(

@@ -169,8 +169,12 @@ namespace CubeSurvivor.Systems.Core
                 return; // Couldn't find valid position
             }
 
-            // Create enemy
-            var enemy = _enemyFactory.CreateEnemy(World, spawnPosition.Value);
+            // Create enemy - FORCE glorb for now (other types don't have textures)
+            // TODO: Add textures to default/fast/strong or make spawner choose based on region meta
+            string enemyType = "glorb"; // Force glorb until other types have textures
+            Console.WriteLine($"[EnemySpawnSystem] Spawning enemyType='{enemyType}' at ({spawnPosition.Value.X:F1},{spawnPosition.Value.Y:F1})");
+            
+            var enemy = _enemyFactory.CreateEnemy(World, spawnPosition.Value, enemyType);
 
             // Apply difficulty scaling
             float multiplier = GameConfig.GetEnemyDifficultyMultiplier(_elapsedTime);

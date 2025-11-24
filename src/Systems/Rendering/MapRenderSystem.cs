@@ -16,7 +16,12 @@ namespace CubeSurvivor.Systems.Rendering
         private readonly SpriteBatch _spriteBatch;
         private readonly CameraService _cameraService;
         private readonly TextureManager _textureManager;
+        private readonly IVariantResolver _variantResolver;
+        private readonly int _worldSeed;
         private Texture2D _pixelTexture;
+        private int _missingTextureLogCount = 0;
+        private bool _loggedResolverNull = false;
+        private bool _loggedBaseIdNull = false;
 
         // Block colors for visual representation
         private readonly Color _wallColor = new Color(80, 80, 80);      // Gray
@@ -24,12 +29,14 @@ namespace CubeSurvivor.Systems.Rendering
         private readonly Color _treeColor = new Color(34, 139, 34);     // Forest green
         private readonly Color _rockColor = new Color(105, 105, 105);   // Dim gray
 
-        public MapRenderSystem(ChunkedTileMap map, SpriteBatch spriteBatch, CameraService cameraService, TextureManager textureManager)
+        public MapRenderSystem(ChunkedTileMap map, SpriteBatch spriteBatch, CameraService cameraService, TextureManager textureManager, IVariantResolver variantResolver, int worldSeed = 0)
         {
             _map = map ?? throw new ArgumentNullException(nameof(map));
             _spriteBatch = spriteBatch ?? throw new ArgumentNullException(nameof(spriteBatch));
             _cameraService = cameraService ?? throw new ArgumentNullException(nameof(cameraService));
             _textureManager = textureManager ?? throw new ArgumentNullException(nameof(textureManager));
+            _variantResolver = variantResolver;
+            _worldSeed = worldSeed;
             
             // Initialize pixel texture in constructor since we have access to GraphicsDevice
             _pixelTexture = new Texture2D(_spriteBatch.GraphicsDevice, 1, 1);
@@ -53,7 +60,7 @@ namespace CubeSurvivor.Systems.Rendering
             _spriteBatch.Begin(
                 sortMode: SpriteSortMode.Deferred,
                 blendState: BlendState.AlphaBlend,
-                samplerState: SamplerState.PointClamp,
+                samplerState: SamplerState.PointClamp, // 32x32 pixel-art, no blur
                 transformMatrix: cameraTransform
             );
 
@@ -194,16 +201,64 @@ namespace CubeSurvivor.Systems.Rendering
                         int worldX = chunkWorldX + lx * _map.TileSize;
                         int worldY = chunkWorldY + ly * _map.TileSize;
 
-                        // Try to get texture first, fallback to color
+                        // Calculate tile coordinates for variant resolution
+                        int tileX = chunkCoord.X * _map.ChunkSize + lx;
+                        int tileY = chunkCoord.Y * _map.ChunkSize + ly;
+
+                        // Try to get variant texture with rotation - ALWAYS use VariantResolver if available
                         Rectangle destRect = new Rectangle(worldX, worldY, _map.TileSize, _map.TileSize);
-                        Texture2D blockTexture = GetBlockTexture(blockType);
+                        string baseId = GetBlockBaseId(blockType);
                         
-                        if (blockTexture != null)
+                        Texture2D blockTexture = null;
+                        float rotation = 0f;
+                        
+                        if (_variantResolver != null && !string.IsNullOrEmpty(baseId))
                         {
-                            _spriteBatch.Draw(blockTexture, destRect, Color.White);
+                            var (tex, rot) = _variantResolver.Resolve(baseId, tileX, tileY, layerIndex, _worldSeed);
+                            blockTexture = tex;
+                            rotation = rot;
+                            
+                            // Debug: log missing texture from variant resolver (only first few times to avoid spam)
+                            if (blockTexture == null)
+                            {
+                                if (_missingTextureLogCount++ < 5)
+                                {
+                                    System.Console.WriteLine($"[MapRenderSystem] MissingTexture key=\"{baseId}\" at tile=({tileX},{tileY}) layer={layerIndex} kind=Blocks (VariantResolver returned null)");
+                                }
+                            }
                         }
                         else
                         {
+                            // VariantResolver not available - this should not happen in normal gameplay
+                            if (_variantResolver == null && !_loggedResolverNull)
+                            {
+                                System.Console.WriteLine($"[MapRenderSystem] ⚠ VariantResolver is null! Blocks will not render correctly.");
+                                _loggedResolverNull = true;
+                            }
+                            if (string.IsNullOrEmpty(baseId) && !_loggedBaseIdNull)
+                            {
+                                System.Console.WriteLine($"[MapRenderSystem] ⚠ baseId is null for BlockType={blockType}");
+                                _loggedBaseIdNull = true;
+                            }
+                        }
+                        
+                        if (blockTexture != null)
+                        {
+                            // Draw with rotation if applicable
+                            if (rotation != 0f)
+                            {
+                                Vector2 origin = new Vector2(_map.TileSize / 2f, _map.TileSize / 2f);
+                                Vector2 position = new Vector2(worldX + origin.X, worldY + origin.Y);
+                                _spriteBatch.Draw(blockTexture, position, null, Color.White, rotation, origin, 1f, SpriteEffects.None, 0f);
+                            }
+                            else
+                            {
+                                _spriteBatch.Draw(blockTexture, destRect, Color.White);
+                            }
+                        }
+                        else
+                        {
+                            // Final fallback: use color
                             Color blockColor = GetBlockColor(blockType);
                             _spriteBatch.Draw(_pixelTexture, destRect, blockColor);
                             // Add a darker border for better visibility
@@ -310,10 +365,9 @@ namespace CubeSurvivor.Systems.Rendering
             };
         }
 
-        private Texture2D GetBlockTexture(BlockType blockType)
+        private string GetBlockBaseId(BlockType blockType)
         {
-            // Try to get texture by block type name
-            string textureKey = blockType switch
+            return blockType switch
             {
                 BlockType.Wall => "wall",
                 BlockType.Crate => "crate",
@@ -321,6 +375,12 @@ namespace CubeSurvivor.Systems.Rendering
                 BlockType.Rock => "rock",
                 _ => null
             };
+        }
+
+        private Texture2D GetBlockTexture(BlockType blockType)
+        {
+            // Fallback method - try to get texture by block type name
+            string textureKey = GetBlockBaseId(blockType);
             
             if (textureKey != null)
             {

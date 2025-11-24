@@ -40,18 +40,63 @@ namespace CubeSurvivor.Entities
             var color = new Color(definition.ColorR, definition.ColorG, definition.ColorB);
             if (!string.IsNullOrEmpty(definition.TextureName) && _textureManager != null)
             {
-                var texture = _textureManager.GetTexture(definition.TextureName);
-                if (texture != null)
+                // Check for animation frames (e.g., "glorb1", "glorb2", "glorb3")
+                var baseName = definition.TextureName;
+                if (baseName.EndsWith("1") && baseName.Length > 1)
                 {
-                    enemy.AddComponent(new SpriteComponent(texture, definition.Width, definition.Height, null, RenderLayer.Entities));
+                    // Try to load animation frames
+                    baseName = baseName.Substring(0, baseName.Length - 1);
+                    var frame1 = _textureManager.GetTexture(baseName + "1");
+                    var frame2 = _textureManager.GetTexture(baseName + "2");
+                    var frame3 = _textureManager.GetTexture(baseName + "3");
+                    
+                    if (frame1 != null && frame2 != null && frame3 != null)
+                    {
+                        // Create animated sprite
+                        var frames = new[] { frame1, frame2, frame3 };
+                        enemy.AddComponent(new SpriteComponent(frame1, definition.Width, definition.Height, null, RenderLayer.Entities));
+                        enemy.AddComponent(new SpriteAnimatorComponent(frames, fps: 10f));
+                        Console.WriteLine($"[EnemyFactory] Spawned \"{enemyType}\" at ({position.X:F1},{position.Y:F1}) frames=3 idle={baseName}1");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[EnemyFactory] ⚠ Animation frames missing for '{enemyType}': frame1={frame1 != null}, frame2={frame2 != null}, frame3={frame3 != null}");
+                        // Fallback to single texture
+                        var texture = _textureManager.GetTexture(definition.TextureName);
+                        if (texture != null)
+                        {
+                            enemy.AddComponent(new SpriteComponent(texture, definition.Width, definition.Height, null, RenderLayer.Entities));
+                            Console.WriteLine($"[EnemyFactory] Spawned \"{enemyType}\" at ({position.X:F1},{position.Y:F1}) singleTexture={definition.TextureName}");
+                        }
+                        else
+                        {
+                            enemy.AddComponent(new SpriteComponent(color, definition.Width, definition.Height, RenderLayer.Entities));
+                            Console.WriteLine($"[EnemyFactory] ⚠ Spawned \"{enemyType}\" at ({position.X:F1},{position.Y:F1}) with COLOR FALLBACK (texture '{definition.TextureName}' not found)");
+                        }
+                    }
                 }
                 else
                 {
-                    enemy.AddComponent(new SpriteComponent(color, definition.Width, definition.Height, RenderLayer.Entities));
+                    // Single texture
+                    var texture = _textureManager.GetTexture(definition.TextureName);
+                    if (texture != null)
+                    {
+                        enemy.AddComponent(new SpriteComponent(texture, definition.Width, definition.Height, null, RenderLayer.Entities));
+                        Console.WriteLine($"[EnemyFactory] Spawned \"{enemyType}\" at ({position.X:F1},{position.Y:F1}) singleTexture={definition.TextureName}");
+                    }
+                    else
+                    {
+                        enemy.AddComponent(new SpriteComponent(color, definition.Width, definition.Height, RenderLayer.Entities));
+                        Console.WriteLine($"[EnemyFactory] ⚠ Spawned \"{enemyType}\" at ({position.X:F1},{position.Y:F1}) with COLOR FALLBACK (texture '{definition.TextureName}' not found)");
+                    }
                 }
             }
             else
             {
+                if (_textureManager == null)
+                {
+                    Console.WriteLine($"[EnemyFactory] ⚠ TextureManager is null for '{enemyType}', using color fallback");
+                }
                 enemy.AddComponent(new SpriteComponent(color, definition.Width, definition.Height, RenderLayer.Entities));
             }
 

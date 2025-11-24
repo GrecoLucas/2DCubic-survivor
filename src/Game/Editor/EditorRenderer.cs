@@ -357,11 +357,41 @@ namespace CubeSurvivor.Game.Editor
                             screenBottomRight.Y - screenTopLeft.Y
                         );
 
-                        // Try texture first, fallback to color
-                        Texture2D blockTexture = GetBlockTexture(blockType, context);
+                        // Try variant resolver first, fallback to old method
+                        string baseId = GetBlockBaseId(blockType);
+                        Texture2D blockTexture = null;
+                        float rotation = 0f;
+                        
+                        if (context.VariantResolver != null && !string.IsNullOrEmpty(baseId))
+                        {
+                            // Use a deterministic seed based on map dimensions for consistency
+                            int worldSeed = context.MapDefinition != null
+                                ? (context.MapDefinition.MapWidth * 73856093) ^ (context.MapDefinition.MapHeight * 19349663)
+                                : 0;
+                            var (tex, rot) = context.VariantResolver.Resolve(baseId, tx, ty, layerIndex, worldSeed);
+                            blockTexture = tex;
+                            rotation = rot;
+                        }
+                        
+                        // Fallback to old method if variant resolver didn't provide texture
+                        if (blockTexture == null)
+                        {
+                            blockTexture = GetBlockTexture(blockType, context);
+                        }
+                        
                         if (blockTexture != null)
                         {
-                            spriteBatch.Draw(blockTexture, screenRect, drawColor);
+                            // Draw with rotation if applicable
+                            if (rotation != 0f)
+                            {
+                                Vector2 origin = new Vector2(screenRect.Width / 2f, screenRect.Height / 2f);
+                                Vector2 position = new Vector2(screenRect.X + origin.X, screenRect.Y + origin.Y);
+                                spriteBatch.Draw(blockTexture, position, null, drawColor, rotation, origin, 1f, SpriteEffects.None, 0f);
+                            }
+                            else
+                            {
+                                spriteBatch.Draw(blockTexture, screenRect, drawColor);
+                            }
                         }
                         else
                         {
@@ -469,11 +499,9 @@ namespace CubeSurvivor.Game.Editor
             return textureKey != null ? context.TextureManager.GetTexture(textureKey) : null;
         }
 
-        private Texture2D GetBlockTexture(BlockType blockType, EditorContext context)
+        private string GetBlockBaseId(BlockType blockType)
         {
-            if (context.TextureManager == null) return null;
-            
-            string textureKey = blockType switch
+            return blockType switch
             {
                 BlockType.Wall => "wall",
                 BlockType.Crate => "crate",
@@ -481,8 +509,15 @@ namespace CubeSurvivor.Game.Editor
                 BlockType.Rock => "rock",
                 _ => null
             };
-            
-            return textureKey != null ? context.TextureManager.GetTexture(textureKey) : null;
+        }
+
+        private Texture2D GetBlockTexture(BlockType blockType, EditorContext context)
+        {
+            // Fallback method - try to get texture by block type name
+            string textureKey = GetBlockBaseId(blockType);
+            return textureKey != null && context.TextureManager != null 
+                ? context.TextureManager.GetTexture(textureKey) 
+                : null;
         }
 
         private Texture2D GetItemTexture(ItemType itemType, EditorContext context)

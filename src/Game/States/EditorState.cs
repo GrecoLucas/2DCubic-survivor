@@ -81,6 +81,17 @@ namespace CubeSurvivor.Game.States
             // Initialize texture manager
             _textureManager = new Core.TextureManager(_graphicsDevice);
             _context.TextureManager = _textureManager;
+            
+            // Load all textures including variants
+            LoadTextures();
+            
+            // Initialize variant system
+            EditorLogger.Log("EditorState", "Initializing TileVisualCatalog...");
+            var catalog = new TileVisualCatalog(_textureManager);
+            catalog.InitializeDefaults();
+            var variantResolver = new VariantResolver(catalog);
+            _context.VariantResolver = variantResolver;
+            EditorLogger.Log("EditorState", "VariantResolver initialized");
 
             // Initialize layer visibility arrays
             _context.TileLayerVisible = new bool[mapDefinition.TileLayers.Count];
@@ -581,6 +592,55 @@ namespace CubeSurvivor.Game.States
 
             // Recalculate layout after potential window change
             RecalculateLayout();
+        }
+
+        private void LoadTextures()
+        {
+            try
+            {
+                // Base textures
+                _textureManager.LoadTexture("grass", "grass.png");
+                _textureManager.LoadTexture("dirt", "dirt.png");
+                _textureManager.LoadTexture("stone", "stone.png");
+                _textureManager.LoadTexture("floor", "floor.png");
+                _textureManager.LoadTexture("wall", "wall.png");
+                _textureManager.LoadTexture("crate", "crate.png");
+                
+                // Variant textures for trees and stones
+                _textureManager.LoadTexture("tree1", "tree1.png");
+                _textureManager.LoadTexture("tree2", "tree2.png");
+                _textureManager.LoadTexture("stone1", "stone1.png");
+                _textureManager.LoadTexture("stone2", "stone2.png");
+                
+                // Enemy animation frames
+                _textureManager.LoadTexture("glorb1", "glorb1.png");
+                _textureManager.LoadTexture("glorb2", "glorb2.png");
+                _textureManager.LoadTexture("glorb3", "glorb3.png");
+                
+                // Items
+                _textureManager.LoadTexture("apple", "apple.png");
+                _textureManager.LoadTexture("brain", "brain.png");
+                _textureManager.LoadTexture("gun", "gun.png");
+                _textureManager.LoadTexture("hammer", "hammer.png");
+                _textureManager.LoadTexture("wood", "wood.png");
+                _textureManager.LoadTexture("gold", "gold.png");
+                
+                EditorLogger.Log("EditorState", "Textures loaded (including variants)");
+                
+                // Debug: List all loaded texture keys
+                var textureKeys = new[] { "grass", "dirt", "stone", "floor", "wall", "crate", "tree1", "tree2", "stone1", "stone2", 
+                                          "glorb1", "glorb2", "glorb3", "apple", "brain", "gun", "hammer", "wood", "gold" };
+                EditorLogger.Log("EditorState", "Loaded texture keys:");
+                foreach (var key in textureKeys)
+                {
+                    var tex = _textureManager.GetTexture(key);
+                    EditorLogger.Log("EditorState", $"  {key}: {(tex != null ? "✓" : "✗ MISSING")}");
+                }
+            }
+            catch (Exception ex)
+            {
+                EditorLogger.LogError("EditorState", $"Error loading textures: {ex.Message}");
+            }
         }
 
         private void RecalculateLayout()

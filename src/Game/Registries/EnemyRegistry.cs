@@ -98,6 +98,26 @@ namespace CubeSurvivor.Game.Registries
                     new LootEntry { ItemType = "brain", DropChance = 0.25f }
                 }
             });
+
+            // Glorb enemy with animated sprite (glorb1, glorb2, glorb3 frames)
+            Register("glorb", new EnemyDefinition
+            {
+                Name = "Glorb",
+                Health = 50f,
+                Damage = 10f,
+                Speed = 150f,
+                AttackCooldown = 1f,
+                Width = 32f,
+                Height = 32f,
+                ColorR = 100,
+                ColorG = 150,
+                ColorB = 200,
+                TextureName = "glorb1", // EnemyFactory will detect and load glorb1/2/3 for animation
+                LootTable = new[]
+                {
+                    new LootEntry { ItemType = "brain", DropChance = 0.1f }
+                }
+            });
         }
     }
 

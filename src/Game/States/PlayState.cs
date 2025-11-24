@@ -5,6 +5,7 @@ using CubeSurvivor.Core;
 using CubeSurvivor.Core.Spatial;
 using CubeSurvivor.Entities;
 using CubeSurvivor.Game.Map;
+using CubeSurvivor.Game.Registries;
 using CubeSurvivor.Game.Editor.UI;
 using CubeSurvivor.Inventory.Systems;
 using CubeSurvivor.Systems;
@@ -310,7 +311,7 @@ namespace CubeSurvivor.Game.States
                 pf.SetTextureManager(_textureManager);
             }
             
-            _enemyFactory = new EnemyFactory();
+            _enemyFactory = new EnemyFactory(_textureManager); // Pass TextureManager for texture loading
             _bulletFactory = new BulletFactory();
             _worldObjectFactory = new WorldObjectFactory();
             
@@ -322,19 +323,47 @@ namespace CubeSurvivor.Game.States
         {
             try
             {
+                // Base textures
                 _textureManager.LoadTexture("grass", "grass.png");
                 _textureManager.LoadTexture("cave", "cave.png");
                 _textureManager.LoadTexture("player", "player.png");
+                _textureManager.LoadTexture("wall", "wall.png");
+                _textureManager.LoadTexture("crate", "crate.png");
+                
+                // Variant textures for trees and stones
+                _textureManager.LoadTexture("tree1", "tree1.png");
+                _textureManager.LoadTexture("tree2", "tree2.png");
+                _textureManager.LoadTexture("stone1", "stone1.png");
+                _textureManager.LoadTexture("stone2", "stone2.png");
+                
+                // Enemy animation frames
+                _textureManager.LoadTexture("glorb1", "glorb1.png");
+                _textureManager.LoadTexture("glorb2", "glorb2.png");
+                _textureManager.LoadTexture("glorb3", "glorb3.png");
+                
+                // Items
                 _textureManager.LoadTexture("apple", "apple.png");
                 _textureManager.LoadTexture("brain", "brain.png");
                 _textureManager.LoadTexture("gun", "gun.png");
                 _textureManager.LoadTexture("hammer", "hammer.png");
                 _textureManager.LoadTexture("wood", "wood.png");
-                Console.WriteLine("[PlayState] Textures loaded");
+                _textureManager.LoadTexture("gold", "gold.png");
+                
+                Console.WriteLine("[PlayState] Textures loaded (including variants)");
+                
+                // Debug: List all loaded texture keys
+                Console.WriteLine("[PlayState] Loaded texture keys:");
+                var textureKeys = new[] { "grass", "cave", "player", "wall", "crate", "tree1", "tree2", "stone1", "stone2", 
+                                          "glorb1", "glorb2", "glorb3", "apple", "brain", "gun", "hammer", "wood", "gold" };
+                foreach (var key in textureKeys)
+                {
+                    var tex = _textureManager.GetTexture(key);
+                    Console.WriteLine($"  {key}: {(tex != null ? "✓" : "✗ MISSING")}");
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[PlayStateV2] Error loading textures: {ex.Message}");
+                Console.WriteLine($"[PlayState] Error loading textures: {ex.Message}");
             }
         }
 
@@ -375,20 +404,52 @@ namespace CubeSurvivor.Game.States
 
         private void InitializeSystems()
         {
-            // Initialize map rendering
+            // Initialize variant system for deterministic tile/block variants
+            Console.WriteLine("[PlayState] Initializing TileVisualCatalog...");
+            var catalog = new TileVisualCatalog(_textureManager);
+            catalog.InitializeDefaults();
+            var variantResolver = new VariantResolver(catalog);
+            // Use a deterministic seed based on map dimensions for consistency
+            int worldSeed = _chunkedMap.Definition != null 
+                ? (_chunkedMap.Definition.MapWidth * 73856093) ^ (_chunkedMap.Definition.MapHeight * 19349663)
+                : 0;
+            Console.WriteLine($"[PlayState] VariantResolver initialized with worldSeed={worldSeed}");
+            
+            // Debug: List enemy registry entries
+            Console.WriteLine("[PlayState] Enemy registry entries:");
+            foreach (var key in EnemyRegistry.Instance.GetAllKeys())
+            {
+                var def = EnemyRegistry.Instance.Get(key);
+                Console.WriteLine($"  {key}: textureName={def.TextureName ?? "null"}, frames={(def.TextureName != null && def.TextureName.EndsWith("1") ? "3 (detected)" : "1")}");
+            }
+            
+            // Update WorldObjectFactory with variant resolver
+            if (_worldObjectFactory is WorldObjectFactory wof)
+            {
+                // Create new factory with variant resolver
+                _worldObjectFactory = new WorldObjectFactory(_textureManager, catalog, variantResolver, worldSeed);
+            }
+            
+            // Initialize map rendering with variant resolver
             _mapRenderSystem = new MapRenderSystem(
                 _chunkedMap,
                 _spriteBatch,
                 _cameraService,
-                _textureManager
+                _textureManager,
+                variantResolver,
+                worldSeed
             );
             
-            // Initialize block streaming
+            // Initialize block streaming with variant resolver
             _blockStreamer = new BlockEntityStreamer(
                 _chunkedMap,
                 _worldObjectFactory,
                 _world,
-                _cameraService
+                _cameraService,
+                _textureManager,
+                catalog,
+                variantResolver,
+                worldSeed
             );
             
             // Initialize biome system (for backward compatibility)
@@ -439,7 +500,10 @@ namespace CubeSurvivor.Game.States
             // (3) Consumption
             _world.AddSystem(new ConsumptionSystem());
             
-            // (4) AI
+            // (4) Animation (before AI so facing is updated)
+            _world.AddSystem(new SpriteAnimationSystem());
+            
+            // (5) AI
             _world.AddSystem(new AISystem(_biomeSystem));
             
             // (5) Movement

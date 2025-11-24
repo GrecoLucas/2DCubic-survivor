@@ -94,6 +94,9 @@ namespace CubeSurvivor.Game.Editor
         
         // Texture manager reference (set by EditorState)
         public Core.TextureManager TextureManager { get; set; }
+        
+        // Variant resolver for deterministic tile/block variants (set by EditorState)
+        public IVariantResolver VariantResolver { get; set; }
 
         // ============================================================
         // COORDINATE CONVERSION HELPERS

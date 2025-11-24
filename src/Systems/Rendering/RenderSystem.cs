@@ -2,6 +2,7 @@ using CubeSurvivor.Components;
 using CubeSurvivor.Core;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 using System.Linq;
 
 namespace CubeSurvivor.Systems
@@ -32,7 +33,12 @@ namespace CubeSurvivor.Systems
                 return;
 
             var cameraTransformMatrix = cameraTransform ?? Matrix.Identity;
-            _spriteBatch.Begin(transformMatrix: cameraTransformMatrix);
+            _spriteBatch.Begin(
+                sortMode: SpriteSortMode.Deferred,
+                blendState: BlendState.AlphaBlend,
+                samplerState: SamplerState.PointClamp, // 32x32 pixel-art, no blur
+                transformMatrix: cameraTransformMatrix
+            );
 
             // Ordenar entidades por camada de renderização para controlar z-order
             var sortedEntities = World.GetEntitiesWithComponent<SpriteComponent>()
@@ -42,15 +48,68 @@ namespace CubeSurvivor.Systems
             {
                 var sprite = entity.GetComponent<SpriteComponent>();
                 var transform = entity.GetComponent<TransformComponent>();
+                var animator = entity.GetComponent<SpriteAnimatorComponent>();
 
                 if (sprite == null || transform == null || !sprite.Enabled)
                     continue;
 
-                // All entities use transform.Rotation + FacingOffsetRadians
-                float rotation = transform.Rotation + sprite.FacingOffsetRadians;
+                // PRIORITY: Use animator frame if available, otherwise use sprite texture
+                Texture2D tex;
+                string texSource = "unknown";
+                if (animator != null && animator.Enabled)
+                {
+                    var animFrame = animator.GetCurrentFrame();
+                    if (animFrame != null)
+                    {
+                        tex = animFrame;
+                        texSource = "AnimatorFrame";
+                        // Debug: log animator usage (limited to avoid spam)
+                        if (System.Diagnostics.Debugger.IsAttached && (entity.GetHashCode() % 100 == 0))
+                        {
+                            Console.WriteLine($"[RenderSystem] entity={entity.GetHashCode()} using AnimatorFrame frameIndex={animator.CurrentFrameIndex}");
+                        }
+                    }
+                    else
+                    {
+                        // Animator exists but no frame - fallback to sprite
+                        tex = sprite.Texture ?? _pixelTexture;
+                        texSource = sprite.Texture != null ? "SpriteTexture" : "PixelFallback";
+                        if (System.Diagnostics.Debugger.IsAttached)
+                        {
+                            Console.WriteLine($"[RenderSystem] ⚠ entity={entity.GetHashCode()} AnimatorFrame is null, using {texSource}");
+                        }
+                    }
+                }
+                else
+                {
+                    // No animator - use sprite texture
+                    tex = sprite.Texture ?? _pixelTexture;
+                    texSource = sprite.Texture != null ? "SpriteTexture" : "PixelFallback";
+                }
+                
+                // Debug logging for missing textures (only log once per entity to avoid spam)
+                if (tex == _pixelTexture)
+                {
+                    // Only log if we expected a texture but got pixel fallback
+                    if ((animator != null && animator.Enabled && animator.GetCurrentFrame() == null && sprite.Texture == null) ||
+                        (animator == null && sprite.Texture == null))
+                    {
+                        Console.WriteLine($"[RenderSystem] ⚠ entity={entity.GetHashCode()} using {texSource} (no texture available)");
+                    }
+                }
 
-                Texture2D tex = sprite.Texture ?? _pixelTexture;
-                Color color = sprite.Texture != null ? sprite.TintColor : sprite.Color;
+                Color color = tex != _pixelTexture ? sprite.TintColor : sprite.Color;
+
+                // Rotation: use animator facing if available, otherwise transform rotation + facing offset
+                float rotation;
+                if (animator != null && animator.Enabled)
+                {
+                    rotation = animator.FacingDirection;
+                }
+                else
+                {
+                    rotation = transform.Rotation + sprite.FacingOffsetRadians;
+                }
 
                 // Source rectangle = full texture (no cropping)
                 Rectangle? sourceRect = null;

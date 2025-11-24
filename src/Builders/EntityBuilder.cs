@@ -13,11 +13,11 @@ namespace CubeSurvivor.Builders
     /// Uso:
     /// <code>
     /// var entity = new EntityBuilder(world, "MyEntity")
-    ///     .WithTransform(new Vector2(100, 100))
-    ///     .WithSprite(Color.Blue, 32, 32, RenderLayer.Entities)
-    ///     .WithVelocity(200f)
-    ///     .WithCollider(32, 32, ColliderTag.Default)
-    ///     .Build();
+    ///     .WithTransform(new Vector2(100, 100)) -- faz a entidade ter uma posição
+    ///     .WithSprite(Color.Blue, 32, 32, RenderLayer.Entities) -- faz a entidade ter um sprite
+    ///     .WithVelocity(200f) -- faz a entidade ter uma velocidade
+    ///     .WithCollider(32, 32, ColliderTag.Default) -- faz a entidade ter um collider
+    ///     .Build(); -- constroi a entidade
     /// </code>
     /// </summary>
     public class EntityBuilder
