@@ -19,10 +19,23 @@ namespace CubeSurvivor.Systems
     {
         private readonly Texture2D _brainTexture;
         private int _page = 1;
+        
+        // Tamanho dinâmico da tela
+        private int _screenWidth = GameConfig.ScreenWidth;
+        private int _screenHeight = GameConfig.ScreenHeight;
 
         public UpgradeMenu(Texture2D brainTexture = null)
         {
             _brainTexture = brainTexture;
+        }
+
+        /// <summary>
+        /// Atualiza o tamanho da tela para posicionamento dinâmico.
+        /// </summary>
+        public void SetScreenSize(int width, int height)
+        {
+            _screenWidth = width;
+            _screenHeight = height;
         }
 
         public bool DrawAndHandle(Entity player, SpriteBatch spriteBatch, SpriteFont font, Texture2D pixelTexture, ref MouseState previousMouseState)
@@ -44,12 +57,12 @@ namespace CubeSurvivor.Systems
             var borderColor = Color.White * 0.2f;
 
             int boxW = 500, boxH = 340;
-            int centerX = GameConfig.ScreenWidth / 2;
-            int centerY = GameConfig.ScreenHeight / 2;
+            int centerX = _screenWidth / 2;
+            int centerY = _screenHeight / 2;
             Rectangle box = new Rectangle(centerX - boxW / 2, centerY - boxH / 2, boxW, boxH);
 
             // 2. Desenhar fundo e painel
-            spriteBatch.Draw(pixelTexture, new Rectangle(0, 0, GameConfig.ScreenWidth, GameConfig.ScreenHeight), overlayColor);
+            spriteBatch.Draw(pixelTexture, new Rectangle(0, 0, _screenWidth, _screenHeight), overlayColor);
             spriteBatch.Draw(pixelTexture, box, panelColor);
             spriteBatch.Draw(pixelTexture, new Rectangle(box.X, box.Y, boxW, 2), borderColor);
             spriteBatch.Draw(pixelTexture, new Rectangle(box.X, box.Y + boxH - 2, boxW, 2), borderColor);

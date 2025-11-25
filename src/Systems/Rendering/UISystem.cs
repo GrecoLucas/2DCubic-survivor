@@ -22,11 +22,17 @@ namespace CubeSurvivor.Systems
         // Menu principal (opcional, pode ser substituído/fechado)
         private IMenu _mainMenu;
 
+        // Tamanho dinâmico da tela
+        private int _screenWidth;
+        private int _screenHeight;
+
         public UISystem(SpriteBatch spriteBatch, SpriteFont font, Texture2D pixelTexture)
         {
             _spriteBatch = spriteBatch;
             _font = font;
             _pixelTexture = pixelTexture;
+            _screenWidth = GameConfig.ScreenWidth;
+            _screenHeight = GameConfig.ScreenHeight;
 
             // Por enquanto construímos localmente; no futuro passar via construtor (DI)
             _upgradeMenu = new UpgradeMenu();
@@ -45,6 +51,22 @@ namespace CubeSurvivor.Systems
         {
             // Substituir o upgradeMenu padrão por um que conhece a textura do cérebro
             _upgradeMenu = new UpgradeMenu(brainTexture);
+        }
+
+        /// <summary>
+        /// Atualiza o tamanho da tela para posicionamento dinâmico da UI.
+        /// Deve ser chamado quando a janela é redimensionada.
+        /// </summary>
+        public void SetScreenSize(int width, int height)
+        {
+            _screenWidth = width;
+            _screenHeight = height;
+            
+            // Propagar para o menu de upgrade se suportar
+            if (_upgradeMenu is UpgradeMenu upgradeMenu)
+            {
+                upgradeMenu.SetScreenSize(width, height);
+            }
         }
 
         public override void Update(GameTime gameTime)
@@ -99,16 +121,16 @@ namespace CubeSurvivor.Systems
             }
 
             // Posição da UI (canto inferior esquerdo) - barra de vida
-            Vector2 position = new Vector2(20, GameConfig.ScreenHeight - 40); // ajustado usando GameConfig
+            Vector2 position = new Vector2(20, _screenHeight - 40);
 
             // Desenhar background da barra de vida
-            Rectangle healthBarBg = new Rectangle(20, GameConfig.ScreenHeight - 40, 200, 30);
+            Rectangle healthBarBg = new Rectangle(20, _screenHeight - 40, 200, 30);
             _spriteBatch.Draw(_pixelTexture, healthBarBg, Color.DarkGray);
 
             // Desenhar barra de vida atual
             float healthPercent = health.CurrentHealth / health.MaxHealth;
             int healthBarWidth = (int)(196 * healthPercent);
-            Rectangle healthBar = new Rectangle(22, GameConfig.ScreenHeight - 38, healthBarWidth, 26);
+            Rectangle healthBar = new Rectangle(22, _screenHeight - 38, healthBarWidth, 26);
 
             Color healthColor = Color.Green;
             if (healthPercent < 0.3f) healthColor = Color.Red;
@@ -120,26 +142,26 @@ namespace CubeSurvivor.Systems
             if (_font != null)
             {
                 string healthText = $"HP: {(int)health.CurrentHealth}/{(int)health.MaxHealth}";
-                Vector2 textPosition = new Vector2(25, GameConfig.ScreenHeight - 35);
+                Vector2 textPosition = new Vector2(25, _screenHeight - 35);
                 _spriteBatch.DrawString(_font, healthText, textPosition, Color.White);
             }
 
             // Barra de XP (oposto da vida) - canto inferior direito
             if (xp != null)
             {
-                Rectangle xpBarBg = new Rectangle(GameConfig.ScreenWidth - 220, GameConfig.ScreenHeight - 40, 200, 30);
+                Rectangle xpBarBg = new Rectangle(_screenWidth - 220, _screenHeight - 40, 200, 30);
                 _spriteBatch.Draw(_pixelTexture, xpBarBg, Color.DarkGray);
 
                 float xpPercent = xp.RequiredXp > 0 ? xp.CurrentXp / xp.RequiredXp : 0f;
                 int xpBarWidth = (int)(196 * xpPercent);
-                Rectangle xpBar = new Rectangle(GameConfig.ScreenWidth - 218, GameConfig.ScreenHeight - 38, xpBarWidth, 26);
+                Rectangle xpBar = new Rectangle(_screenWidth - 218, _screenHeight - 38, xpBarWidth, 26);
 
                 _spriteBatch.Draw(_pixelTexture, xpBar, Color.CornflowerBlue);
 
                 if (_font != null)
                 {
                     string xpText = $"XP: {(int)xp.CurrentXp}/{(int)xp.RequiredXp}";
-                    Vector2 xpTextPos = new Vector2(GameConfig.ScreenWidth - 215, GameConfig.ScreenHeight - 35);
+                    Vector2 xpTextPos = new Vector2(_screenWidth - 215, _screenHeight - 35);
                     _spriteBatch.DrawString(_font, xpText, xpTextPos, Color.White);
                     
                     // Mostrar mensagem de nível pendente acima da barra de XP
@@ -149,8 +171,8 @@ namespace CubeSurvivor.Systems
                         Vector2 levelUpTextSize = _font.MeasureString(levelUpText);
                         // Centralizar o texto acima da barra de XP com margem adequada
                         Vector2 levelUpTextPos = new Vector2(
-                            GameConfig.ScreenWidth - 220 + (200 - levelUpTextSize.X) / 2, 
-                            GameConfig.ScreenHeight - 70
+                            _screenWidth - 220 + (200 - levelUpTextSize.X) / 2, 
+                            _screenHeight - 70
                         );
                         _spriteBatch.DrawString(_font, levelUpText, levelUpTextPos, Color.Yellow);
                     }

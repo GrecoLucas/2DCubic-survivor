@@ -47,6 +47,10 @@ namespace CubeSurvivor.Game.States
         private UIModal _deleteModal;
         private string _mapToDelete;
 
+        // Rastrear tamanho da tela para reconstruir layout quando mudar
+        private int _lastScreenWidth;
+        private int _lastScreenHeight;
+
         // Events
         public event Action<string> OnPlayMap;
         public event Action<string> OnEditMap;
@@ -68,9 +72,40 @@ namespace CubeSurvivor.Game.States
 
             _previewRenderer = new MapPreviewRenderer(graphicsDevice);
 
+            // Inicializar rastreamento de tamanho da tela
+            _lastScreenWidth = graphicsDevice.Viewport.Width;
+            _lastScreenHeight = graphicsDevice.Viewport.Height;
+
             BuildMainMenu();
             BuildMapBrowser();
             BuildDeleteModal();
+        }
+
+        /// <summary>
+        /// Verifica se o tamanho da tela mudou e reconstrói o layout se necessário.
+        /// </summary>
+        private void CheckScreenSizeChanged()
+        {
+            int currentWidth = _graphicsDevice.Viewport.Width;
+            int currentHeight = _graphicsDevice.Viewport.Height;
+            
+            if (currentWidth != _lastScreenWidth || currentHeight != _lastScreenHeight)
+            {
+                Console.WriteLine($"[MainMenu] Screen size changed: {_lastScreenWidth}x{_lastScreenHeight} -> {currentWidth}x{currentHeight}");
+                _lastScreenWidth = currentWidth;
+                _lastScreenHeight = currentHeight;
+                
+                // Reconstruir todos os layouts
+                BuildMainMenu();
+                BuildMapBrowser();
+                BuildDeleteModal();
+                
+                // Se estiver no browser, atualizar a lista
+                if (_currentMode == MenuMode.MapBrowser)
+                {
+                    RefreshMapList();
+                }
+            }
         }
 
         private void BuildMainMenu()
@@ -387,6 +422,9 @@ namespace CubeSurvivor.Game.States
 
         public void Update(GameTime gameTime)
         {
+            // Verificar se o tamanho da tela mudou
+            CheckScreenSizeChanged();
+            
             MouseState mouseState = Mouse.GetState();
 
             // Update modal first (if open, blocks everything else)

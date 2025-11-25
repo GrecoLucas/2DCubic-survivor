@@ -388,18 +388,20 @@ namespace CubeSurvivor.Game.States
             _chunkedMap = new ChunkedTileMap(mapDef);
             _regionProvider = new MapRegionProvider(_chunkedMap);
             
-            // Initialize camera with map size
+            // Initialize camera with map size and current window size
             int mapWidthPixels = _chunkedMap.MapWidthInPixels;
             int mapHeightPixels = _chunkedMap.MapHeightInPixels;
+            int screenWidth = _graphicsDevice.Viewport.Width;
+            int screenHeight = _graphicsDevice.Viewport.Height;
             
             _cameraService = new CameraService(
-                GameConfig.ScreenWidth,
-                GameConfig.ScreenHeight,
+                screenWidth,
+                screenHeight,
                 mapWidthPixels,
                 mapHeightPixels
             );
             
-            Console.WriteLine($"[PlayStateV2] Map loaded: {mapWidthPixels}x{mapHeightPixels}px");
+            Console.WriteLine($"[PlayState] Camera initialized: screen {screenWidth}x{screenHeight}, map {mapWidthPixels}x{mapHeightPixels}px");
             MapLoader.PrintMapSummary(mapDef);
         }
 
@@ -462,30 +464,36 @@ namespace CubeSurvivor.Game.States
             _renderSystem.CreatePixelTexture(_graphicsDevice);
             
             // Initialize UI systems
+            // Usar tamanho atual da janela ao invés de GameConfig para suportar redimensionamento
+            int currentWidth = _graphicsDevice.Viewport.Width;
+            int currentHeight = _graphicsDevice.Viewport.Height;
+            Console.WriteLine($"[PlayState] Initializing UI with screen size: {currentWidth}x{currentHeight}");
+            
             _uiSystem = new UISystem(_spriteBatch, _font, _pixelTexture, null, _textureManager.GetTexture("brain"));
             _uiSystem.Initialize(_world);
+            _uiSystem.SetScreenSize(currentWidth, currentHeight);
             
             _gameStateSystem = new GameStateSystem();
             _gameStateSystem.Initialize(_world);
             
             // Input systems
             _inputSystem = new PlayerInputSystem(_bulletFactory);
-            _inputSystem.SetScreenSize(GameConfig.ScreenWidth, GameConfig.ScreenHeight);
+            _inputSystem.SetScreenSize(currentWidth, currentHeight);
             
             _inventoryInputSystem = new InventoryInputSystem();
             _inventoryInputSystem.Initialize(_world);
             
             _inventoryUISystem = new InventoryUISystem(_spriteBatch, _font, _pixelTexture);
             _inventoryUISystem.Initialize(_world);
-            _inventoryUISystem.SetScreenSize(GameConfig.ScreenWidth, GameConfig.ScreenHeight);
+            _inventoryUISystem.SetScreenSize(currentWidth, currentHeight);
             
             _inventoryDragDropSystem = new InventoryDragDropSystem();
             _inventoryDragDropSystem.Initialize(_world);
-            _inventoryDragDropSystem.SetScreenSize(GameConfig.ScreenWidth, GameConfig.ScreenHeight);
+            _inventoryDragDropSystem.SetScreenSize(currentWidth, currentHeight);
             
             _consumptionUISystem = new ConsumptionUISystem(_spriteBatch, _font, _pixelTexture);
             _consumptionUISystem.Initialize(_world);
-            _consumptionUISystem.SetScreenSize(GameConfig.ScreenWidth, GameConfig.ScreenHeight);
+            _consumptionUISystem.SetScreenSize(currentWidth, currentHeight);
             
             // Register gameplay systems IN CORRECT ORDER
             Console.WriteLine("[PlayState] Registering gameplay systems...");
@@ -761,6 +769,25 @@ namespace CubeSurvivor.Game.States
             
             // Respawn player
             SpawnPlayer();
+        }
+
+        /// <summary>
+        /// Atualiza o tamanho da tela para todos os sistemas de UI.
+        /// Chamado quando a janela é redimensionada.
+        /// </summary>
+        public void SetScreenSize(int width, int height)
+        {
+            Console.WriteLine($"[PlayState] SetScreenSize({width}, {height})");
+            
+            // Atualizar câmera
+            _cameraService?.SetViewportSize(width, height);
+            
+            // Atualizar sistemas de UI
+            _uiSystem?.SetScreenSize(width, height);
+            _inventoryUISystem?.SetScreenSize(width, height);
+            _consumptionUISystem?.SetScreenSize(width, height);
+            _inventoryDragDropSystem?.SetScreenSize(width, height);
+            _inputSystem?.SetScreenSize(width, height);
         }
 
         public void Draw(GameTime gameTime)

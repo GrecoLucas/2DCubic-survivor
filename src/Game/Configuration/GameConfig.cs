@@ -6,8 +6,8 @@ namespace CubeSurvivor
     public static class GameConfig
     {
         // Configurações de tela (1920x1080 default)
-        public const int ScreenWidth = 1920;
-        public const int ScreenHeight = 1080;
+        public const int ScreenWidth = 1080;
+        public const int ScreenHeight = 720;
 
         // Limites do mapa
         public const int MapWidth = 2000;

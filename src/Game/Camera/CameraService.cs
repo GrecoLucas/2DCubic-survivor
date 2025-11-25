@@ -14,8 +14,8 @@ namespace CubeSurvivor
         public int ScreenWidth => _screenWidth;
         public int ScreenHeight => _screenHeight;
 
-        private readonly int _screenWidth;
-        private readonly int _screenHeight;
+        private int _screenWidth;
+        private int _screenHeight;
         private int _mapWidth;
         private int _mapHeight;
 
@@ -34,6 +34,15 @@ namespace CubeSurvivor
         {
             _mapWidth = mapWidth;
             _mapHeight = mapHeight;
+        }
+
+        /// <summary>
+        /// Atualiza as dimensões do viewport (útil quando a janela é redimensionada).
+        /// </summary>
+        public void SetViewportSize(int screenWidth, int screenHeight)
+        {
+            _screenWidth = screenWidth;
+            _screenHeight = screenHeight;
         }
 
         public void Update(Entity player)
