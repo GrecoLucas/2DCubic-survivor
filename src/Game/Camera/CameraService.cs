@@ -12,8 +12,8 @@ namespace CubeSurvivor
     {
         public Matrix Transform { get; private set; } = Matrix.Identity;
 
-        private readonly int _screenWidth;
-        private readonly int _screenHeight;
+        private int _screenWidth;
+        private int _screenHeight;
         private int _mapWidth;
         private int _mapHeight;
 
@@ -23,6 +23,15 @@ namespace CubeSurvivor
             _screenHeight = screenHeight;
             _mapWidth = mapWidth;
             _mapHeight = mapHeight;
+        }
+
+        /// <summary>
+        /// Atualiza as dimensões da tela.
+        /// </summary>
+        public void UpdateScreenSize(int width, int height)
+        {
+            _screenWidth = width;
+            _screenHeight = height;
         }
 
         /// <summary>

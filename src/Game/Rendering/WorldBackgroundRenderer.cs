@@ -16,8 +16,8 @@ namespace CubeSurvivor
         private int _mapWidth;
         private int _mapHeight;
         private readonly int _tileSize;
-        private readonly int _screenWidth;
-        private readonly int _screenHeight;
+        private int _screenWidth;
+        private int _screenHeight;
 
         public WorldBackgroundRenderer(int mapWidth, int mapHeight, int tileSize, int screenWidth, int screenHeight)
         {
@@ -26,6 +26,12 @@ namespace CubeSurvivor
             _tileSize = tileSize;
             _screenWidth = screenWidth;
             _screenHeight = screenHeight;
+        }
+
+        public void UpdateScreenSize(int width, int height)
+        {
+            _screenWidth = width;
+            _screenHeight = height;
         }
 
         // Configura provider que retorna textura do bioma para uma posição; obrigatório para renderização.

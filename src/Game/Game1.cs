@@ -84,8 +84,36 @@ namespace CubeSurvivor
         protected override void Initialize()
         {
             Console.WriteLine("[Game1] Initialize() iniciado");
+            
+            // Permitir redimensionamento da janela (habilita o botão de maximizar)
+            Window.AllowUserResizing = true;
+            Window.ClientSizeChanged += OnClientSizeChanged;
+
             base.Initialize();
             Console.WriteLine("[Game1] Initialize() concluído");
+        }
+
+        private void OnClientSizeChanged(object sender, EventArgs e)
+        {
+            if (Window.ClientBounds.Width > 0 && Window.ClientBounds.Height > 0)
+            {
+                _graphics.PreferredBackBufferWidth = Window.ClientBounds.Width;
+                _graphics.PreferredBackBufferHeight = Window.ClientBounds.Height;
+                _graphics.ApplyChanges();
+
+                UpdateScreenSize(Window.ClientBounds.Width, Window.ClientBounds.Height);
+            }
+        }
+
+        private void UpdateScreenSize(int width, int height)
+        {
+             _cameraService.UpdateScreenSize(width, height);
+             _inputSystem.SetScreenSize(width, height);
+             _uiSystem.SetScreenSize(width, height);
+             _inventoryUISystem.SetScreenSize(width, height);
+             _consumptionUISystem.SetScreenSize(width, height);
+             _backgroundRenderer?.UpdateScreenSize(width, height);
+             Console.WriteLine($"[Game1] Screen size updated to {width}x{height}");
         }
 
         protected override void LoadContent()
