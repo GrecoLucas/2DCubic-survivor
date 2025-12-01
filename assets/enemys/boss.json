@@ -11,5 +11,6 @@
             "item": "boss_relic",
             "chance": 1.0
         }
-    ]
+    ],
+    "maxInstances": 1
 }

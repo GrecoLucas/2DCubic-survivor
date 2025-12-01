@@ -19,7 +19,7 @@
             "treeDensity": 0,
             "textureKey": "ruins",
             "allowedEnemies": [
-                "golem"
+                "boss"
             ]
         }
     ]

@@ -152,6 +152,9 @@ namespace CubeSurvivor
 
         [JsonPropertyName("allowedEnemies")]
         public List<string> AllowedEnemies { get; set; } = new();
+
+        [JsonPropertyName("isWalkable")]
+        public bool IsWalkable { get; set; } = true;
     }
 
 }

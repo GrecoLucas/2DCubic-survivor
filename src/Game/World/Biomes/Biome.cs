@@ -11,8 +11,9 @@ namespace CubeSurvivor.World.Biomes
         public bool AllowsEnemySpawns { get; }
         public int TreeDensity { get; }
         public System.Collections.Generic.List<string> AllowedEnemies { get; }
+        public bool IsWalkable { get; }
 
-        public Biome(BiomeType type, Rectangle area, Texture2D texture, bool allowsEnemySpawns, int treeDensity, System.Collections.Generic.List<string> allowedEnemies = null)
+        public Biome(BiomeType type, Rectangle area, Texture2D texture, bool allowsEnemySpawns, int treeDensity, System.Collections.Generic.List<string> allowedEnemies = null, bool isWalkable = true)
         {
             Type = type;
             Area = area;
@@ -20,6 +21,7 @@ namespace CubeSurvivor.World.Biomes
             AllowsEnemySpawns = allowsEnemySpawns;
             TreeDensity = treeDensity;
             AllowedEnemies = allowedEnemies ?? new System.Collections.Generic.List<string>();
+            IsWalkable = isWalkable;
         }
 
         public bool Contains(Vector2 position)

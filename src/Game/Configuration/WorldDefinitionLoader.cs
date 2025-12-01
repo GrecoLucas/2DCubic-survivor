@@ -144,7 +144,8 @@ namespace CubeSurvivor
                             AllowsEnemySpawns = jb.AllowsEnemySpawns,
                             TreeDensity = jb.TreeDensity,
                             TextureKey = textureKey,
-                            AllowedEnemies = jb.AllowedEnemies ?? new List<string>()
+                            AllowedEnemies = jb.AllowedEnemies ?? new List<string>(),
+                            IsWalkable = jb.IsWalkable
                         });
                     }
 

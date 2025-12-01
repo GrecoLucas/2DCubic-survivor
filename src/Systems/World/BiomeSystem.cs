@@ -34,8 +34,12 @@ namespace CubeSurvivor.Systems.World
 
         public Biome GetBiomeAt(Vector2 pos)
         {
-            var biome = _biomes.FirstOrDefault(b => b.Contains(pos));
-            // if (biome == null && System.DateTime.Now.Millisecond < 5) Console.WriteLine($"[BiomeSystem] No biome found at {pos}");
+            // Prioritize smaller biomes (overlays) over larger ones (base layers)
+            // This ensures that a lake inside a forest is returned instead of the forest
+            var biome = _biomes
+                .OrderBy(b => b.Area.Width * b.Area.Height)
+                .FirstOrDefault(b => b.Contains(pos));
+            
             return biome;
         }
 

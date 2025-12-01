@@ -248,7 +248,7 @@ namespace CubeSurvivor
                 _world.AddSystem(new PickupSystem());
                 _world.AddSystem(new ConsumptionSystem());
                 _world.AddSystem(new AISystem());
-                _world.AddSystem(new MovementSystem());
+                _world.AddSystem(new MovementSystem(_biomeSystem));
                 
                 // AttachmentSystem must run after movement/input to update attached items
                 _world.AddSystem(new AttachmentSystem());
@@ -504,7 +504,8 @@ namespace CubeSurvivor
                     tex,
                     allowsEnemySpawns: bdef.AllowsEnemySpawns,
                     treeDensity: bdef.TreeDensity,
-                    allowedEnemies: bdef.AllowedEnemies
+                    allowedEnemies: bdef.AllowedEnemies,
+                    isWalkable: bdef.IsWalkable
                 ));
             }
             Console.WriteLine($"[Game1] BiomeSystem updated with {_levelDefinition.Biomes.Count} biomes");

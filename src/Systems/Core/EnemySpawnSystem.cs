@@ -87,6 +87,27 @@ namespace CubeSurvivor.Systems
                 }
             }
 
+            // Check max instances for this enemy type
+            int maxInstances = _enemyFactory.GetMaxInstancesFor(enemyId);
+            if (maxInstances != -1)
+            {
+                int currentCount = 0;
+                foreach (var entity in World.GetEntitiesWithComponent<EnemyComponent>())
+                {
+                    var comp = entity.GetComponent<EnemyComponent>();
+                    if (comp != null && string.Equals(comp.EnemyId, enemyId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        currentCount++;
+                    }
+                }
+
+                if (currentCount >= maxInstances)
+                {
+                    // Already reached limit for this enemy type
+                    return;
+                }
+            }
+
             // Criar inimigo via factory (retorna a entidade criada)
             var enemy = _enemyFactory.CreateEnemy(World, position, enemyId);
 

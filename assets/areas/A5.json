@@ -17,10 +17,27 @@
             "type": "Lake",
             "allowsEnemySpawns": true,
             "treeDensity": 0,
+            "textureKey": "tallgrass",
+            "allowedEnemies": [
+                "water_elemental"
+            ],
+            "isWalkable": true
+        },
+        {
+            "area": {
+                "x": 800,
+                "y": 800,
+                "width": 400,
+                "height": 400
+            },
+            "type": "Lake",
+            "allowsEnemySpawns": true,
+            "treeDensity": 0,
             "textureKey": "water",
             "allowedEnemies": [
                 "water_elemental"
-            ]
+            ],
+            "isWalkable": false
         }
     ]
 }

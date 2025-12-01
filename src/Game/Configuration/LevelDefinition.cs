@@ -105,5 +105,6 @@ namespace CubeSurvivor
         public int TreeDensity { get; set; } = 0;
         public string TextureKey { get; set; }
         public List<string> AllowedEnemies { get; set; } = new();
+        public bool IsWalkable { get; set; } = true;
     }
 

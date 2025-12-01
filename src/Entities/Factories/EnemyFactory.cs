@@ -16,6 +16,15 @@ namespace CubeSurvivor.Entities.Factories
     {
         private readonly Dictionary<string, EnemyData> _enemyTemplates = new();
 
+        public int GetMaxInstancesFor(string enemyId)
+        {
+            if (_enemyTemplates.TryGetValue(enemyId.ToLower(), out var data))
+            {
+                return data.MaxInstances;
+            }
+            return -1;
+        }
+
         public EnemyFactory()
         {
             LoadEnemyTemplates();
@@ -84,7 +93,7 @@ namespace CubeSurvivor.Entities.Factories
             enemy.AddComponent(new SpriteComponent(color, data.Width, data.Height, RenderLayer.Entities));
             enemy.AddComponent(new VelocityComponent(data.Speed));
             enemy.AddComponent(new AIComponent(data.Speed));
-            enemy.AddComponent(new EnemyComponent(data.Damage, 1f));
+            enemy.AddComponent(new EnemyComponent(data.Damage, 1f, data.Id));
             enemy.AddComponent(new HealthComponent(data.Health));
             enemy.AddComponent(new ColliderComponent(data.Width, data.Height, ColliderTag.Enemy));
 

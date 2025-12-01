@@ -28,6 +28,9 @@ namespace CubeSurvivor.Entities
 
         [JsonPropertyName("lootTable")]
         public List<LootItem> LootTable { get; set; }
+
+        [JsonPropertyName("maxInstances")]
+        public int MaxInstances { get; set; } = -1;
     }
 
     public class LootItem

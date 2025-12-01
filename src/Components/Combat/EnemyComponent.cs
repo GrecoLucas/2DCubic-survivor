@@ -10,12 +10,14 @@ namespace CubeSurvivor.Components
         public float Damage { get; set; }
         public float AttackCooldown { get; set; }
         public float TimeSinceLastAttack { get; set; }
+        public string EnemyId { get; set; }
 
-        public EnemyComponent(float damage = 10f, float attackCooldown = 1f)
+        public EnemyComponent(float damage = 10f, float attackCooldown = 1f, string enemyId = "basic")
         {
             Damage = damage;
             AttackCooldown = attackCooldown;
             TimeSinceLastAttack = attackCooldown; // Pode atacar imediatamente
+            EnemyId = enemyId;
         }
     }
 }

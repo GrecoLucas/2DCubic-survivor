@@ -9,6 +9,7 @@ namespace CubeSurvivor.Entities
     public interface IEnemyFactory
     {
         Entity CreateEnemy(IGameWorld world, Vector2 position, string enemyId = "basic");
+        int GetMaxInstancesFor(string enemyId);
     }
 }
 
