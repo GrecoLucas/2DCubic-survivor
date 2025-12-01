@@ -4,6 +4,25 @@ import os
 import math
 import random
 
+import json
+
+def load_area_names(areas_dir):
+    names = {}
+    if not os.path.exists(areas_dir):
+        return names
+        
+    for filename in os.listdir(areas_dir):
+        if filename.endswith(".json"):
+            area_id = os.path.splitext(filename)[0]
+            try:
+                with open(os.path.join(areas_dir, filename), 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    if "name" in data:
+                        names[area_id] = data["name"]
+            except Exception as e:
+                print(f"Warning: Could not read {filename}: {e}")
+    return names
+
 def load_map(path):
     # Resolve absolute path if relative
     if not os.path.isabs(path):
@@ -113,7 +132,10 @@ def solve_layout(areas, iterations=2000, learning_rate=0.05):
             
     return coords
 
-def render_map(areas, output_path="world_map.png"):
+def render_map(areas, area_names=None, output_path="world_map.png"):
+    if area_names is None:
+        area_names = {}
+        
     coords = solve_layout(areas)
     
     if not coords:
@@ -201,12 +223,18 @@ def render_map(areas, output_path="world_map.png"):
     # Draw nodes
     for area, (x, y) in coords.items():
         # Draw rounded rectangle (simulated with Rectangle for now)
-        rect_w, rect_h = 0.6, 0.4
+        rect_w, rect_h = 1, 0.4
         rect = Rectangle((x - rect_w/2, y - rect_h/2), rect_w, rect_h, 
                          facecolor=node_color, edgecolor='white', lw=2, zorder=10)
         ax.add_patch(rect)
-        ax.text(x, y, area, ha='center', va='center', 
-                color=text_color, fontweight='bold', zorder=11, fontsize=10)
+        
+        # Label text
+        label = area
+        if area in area_names:
+            label = f"{area}\n{area_names[area]}"
+            
+        ax.text(x, y, label, ha='center', va='center', 
+                color=text_color, fontweight='bold', zorder=11, fontsize=9)
 
     ax.set_xlim(min_x - pad_x, max_x + pad_x)
     ax.set_ylim(min_y - pad_y, max_y + pad_y)
@@ -224,6 +252,11 @@ def render_map(areas, output_path="world_map.png"):
 
 if __name__ == "__main__":
     # Path to maps.txt relative to this script
-    map_path = os.path.join(os.path.dirname(__file__), "..", "maps.txt")
+    base_dir = os.path.dirname(__file__)
+    map_path = os.path.join(base_dir, "..", "maps.txt")
+    areas_dir = os.path.join(base_dir, "..", "areas")
+    
     areas = load_map(map_path)
-    render_map(areas, "world_map.png")
+    area_names = load_area_names(areas_dir)
+    
+    render_map(areas, area_names, "world_map.png")

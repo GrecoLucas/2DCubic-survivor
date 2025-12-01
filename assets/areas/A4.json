@@ -1,0 +1,23 @@
+{
+    "name": "Ruins",
+    "mapWidth": 2000,
+    "mapHeight": 2000,
+    "crates": [],
+    "safeZones": [],
+    "pickups": [],
+    "woodSpawnRegions": [],
+    "biomes": [
+        {
+            "area": {
+                "x": 0,
+                "y": 0,
+                "width": 2000,
+                "height": 2000
+            },
+            "type": "Ruins",
+            "allowsEnemySpawns": true,
+            "treeDensity": 0,
+            "textureKey": "ruins"
+        }
+    ]
+}
