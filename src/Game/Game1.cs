@@ -148,18 +148,14 @@ namespace CubeSurvivor
                 Console.WriteLine("[Game1] Criando definição de nível (carrega JSON)...");
                 CreateLevelDefinition();
 
-                Console.WriteLine("[Game1] Carregando texturas (sem floor)...");
+                Console.WriteLine("[Game1] Carregando texturas automaticamente de assets/textures...");
                 try
                 {
-                    _grassTexture = _textureManager.LoadTexture("grass", "grass.png");
-                    _caveTexture = _textureManager.LoadTexture("cave", "cave.png");
-                    _textureManager.LoadTexture("player", "player.png");
-                    _textureManager.LoadTexture("apple", "apple.png");
-                    _textureManager.LoadTexture("brain", "brain.png");
-                    _textureManager.LoadTexture("gun", "gun.png");
-                    _textureManager.LoadTexture("hammer", "hammer.png");
-                    _textureManager.LoadTexture("wood", "wood.png");
-                    _textureManager.LoadTexture("floor", "floor.png");
+                    _textureManager.LoadAllFromDirectory("textures");
+                    
+                    // Recuperar referências para campos específicos usados em fallbacks
+                    _grassTexture = _textureManager.GetTexture("grass");
+                    _caveTexture = _textureManager.GetTexture("cave");
                 }
                 catch (Exception ex)
                 {

@@ -2,6 +2,6 @@
 # Format: AreaID connections (right=R, left=L, up=U, down=D)
 # Example: A1 R:A2 means A1 has a portal on the right leading to A2
 
-A1 R:A2
-A2 L:A1 R:A3
+A1 U:A2
+A2 D:A1 R:A3
 A3 L:A2

@@ -65,8 +65,8 @@
         "height": 2000
       },
       "type": "Forest",
-      "allowsEnemySpawns": true,
-      "treeDensity": 3,
+      "allowsEnemySpawns": false,
+      "treeDensity": 10,
       "textureKey": "grass"
     }
   ]

@@ -105,6 +105,56 @@ namespace CubeSurvivor.Core
             }
             _textures.Clear();
         }
+
+        /// <summary>
+        /// Carrega todas as texturas de um diretório.
+        /// </summary>
+        public void LoadAllFromDirectory(string directoryName)
+        {
+            var path = ResolvePath(directoryName);
+            if (path == null)
+            {
+                Console.WriteLine($"[TextureManager] Directory '{directoryName}' not found.");
+                return;
+            }
+
+            Console.WriteLine($"[TextureManager] Loading all textures from: {path}");
+            
+            // Suporta png e jpg
+            var extensions = new[] { "*.png", "*.jpg", "*.jpeg" };
+            
+            foreach (var ext in extensions)
+            {
+                var files = Directory.GetFiles(path, ext, SearchOption.TopDirectoryOnly);
+                foreach (var file in files)
+                {
+                    var key = Path.GetFileNameWithoutExtension(file);
+                    // Load using the full path
+                    LoadTexture(key, file);
+                }
+            }
+        }
+
+        private string ResolvePath(string relativePath)
+        {
+            string[] candidates = new[]
+            {
+                relativePath,
+                Path.Combine("assets", relativePath),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, relativePath),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", relativePath),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "assets", relativePath)
+            };
+
+            foreach (var path in candidates)
+            {
+                if (Directory.Exists(path))
+                {
+                    return path;
+                }
+            }
+            return null;
+        }
     }
 }
 
