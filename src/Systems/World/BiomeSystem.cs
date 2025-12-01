@@ -27,6 +27,11 @@ namespace CubeSurvivor.Systems.World
             _biomes.Add(b);
         }
 
+        public void Clear()
+        {
+            _biomes.Clear();
+        }
+
         public Biome GetBiomeAt(Vector2 pos)
         {
             var biome = _biomes.FirstOrDefault(b => b.Contains(pos));

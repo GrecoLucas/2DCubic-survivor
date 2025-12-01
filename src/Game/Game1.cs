@@ -25,6 +25,8 @@ namespace CubeSurvivor
         private InventoryInputSystem _inventoryInputSystem;
         private InventoryUISystem _inventoryUISystem;
         private InventoryDragDropSystem _inventoryDragDropSystem;
+        private CubeSurvivor.Systems.World.BiomeSystem _biomeSystem;
+        private EnemySpawnSystem _enemySpawnSystem;
         private ConsumptionUISystem _consumptionUISystem;
 
         private readonly IPlayerFactory _playerFactory;
@@ -183,45 +185,13 @@ namespace CubeSurvivor
                 Console.WriteLine("[Game1] Configurando BiomeSystem...");
                 var biomes = new System.Collections.Generic.List<CubeSurvivor.World.Biomes.Biome>();
 
-                // Se o levelDefinition contiver biomas, construir a partir dele
-                if (_levelDefinition != null && _levelDefinition.Biomes.Count > 0)
-                {
-                    Console.WriteLine("[Game1] Construindo biomas a partir do LevelDefinition...");
-                    foreach (var bdef in _levelDefinition.Biomes)
-                    {
-                        // Tentar carregar a textura definida no BiomeDefinition (se houver)
-                        Microsoft.Xna.Framework.Graphics.Texture2D tex = null;
-                        if (!string.IsNullOrWhiteSpace(bdef.TextureKey))
-                        {
-                            tex = _textureManager.GetTexture(bdef.TextureKey) ?? _textureManager.LoadTexture(bdef.TextureKey, bdef.TextureKey);
-                            Console.WriteLine($"[Game1] Biome texture '{bdef.TextureKey}' loaded: {tex != null}");
-                        }
-
-                        // Se não houver textura, usar texturas padrão como fallback
-                        if (tex == null)
-                        {
-                            if (bdef.Type == CubeSurvivor.World.Biomes.BiomeType.Cave) tex = _caveTexture;
-                            else if (bdef.Type == CubeSurvivor.World.Biomes.BiomeType.Forest) tex = _grassTexture;
-                            else tex = _grassTexture; // fallback genérico; sem floor
-                        }
-
-                        biomes.Add(new CubeSurvivor.World.Biomes.Biome(
-                            bdef.Type,
-                            bdef.Area,
-                            tex,
-                            allowsEnemySpawns: bdef.AllowsEnemySpawns,
-                            treeDensity: bdef.TreeDensity
-                        ));
-                        Console.WriteLine($"[Game1] Biome added: Type={bdef.Type}, Area={bdef.Area}, Texture={tex?.Name ?? "NULL"}");
-                    }
-                }
                 // Sem fallback legado de metades; requer definição JSON para controle total.
 
-                var biomeSystem = new CubeSurvivor.Systems.World.BiomeSystem(biomes);
-                _world.AddSystem(biomeSystem);
+                _biomeSystem = new CubeSurvivor.Systems.World.BiomeSystem(biomes);
+                _world.AddSystem(_biomeSystem);
 
                 // Informar o renderer sobre o provider de textura por posição (consulta ao BiomeSystem)
-                _backgroundRenderer.SetBiomeTextureProvider(pos => biomeSystem.GetTextureForPosition(pos));
+                _backgroundRenderer.SetBiomeTextureProvider(pos => _biomeSystem.GetTextureForPosition(pos));
 
                 Console.WriteLine("[Game1] Carregando fonte DefaultFont...");
                 try
@@ -304,7 +274,6 @@ namespace CubeSurvivor
                 Console.WriteLine("[Game1] PortalTeleportSystem added");
 
                 Rectangle spawnArea = new Rectangle(0, 0, GameConfig.MapWidth, GameConfig.MapHeight);
-                _world.AddSystem(new EnemySpawnSystem(spawnArea, _enemyFactory, GameConfig.EnemySpawnInterval, GameConfig.MaxEnemies, _safeZoneManager, biomeSystem));
                 _world.AddSystem(new AppleSpawnSystem(spawnArea, _textureManager));
                 
                 Console.WriteLine("[Game1] LoadContent() concluído com sucesso!");
@@ -386,6 +355,9 @@ namespace CubeSurvivor
                 // Adicionar ResourceSpawnSystem depois de carregar o levelDefinition
                 _world.AddSystem(new ResourceSpawnSystem(_levelDefinition, _textureManager));
                 Console.WriteLine("[Game1] ResourceSpawnSystem adicionado");
+
+                // Configurar biomas e spawn de inimigos
+                SetupBiomesAndEnemies();
             }
             
             // Criar jogador mais para cima/esquerda, próximo das safe zones
@@ -500,9 +472,67 @@ namespace CubeSurvivor
                     SpawnPickups();
                     Console.WriteLine($"[Game1] {_levelDefinition.Pickups.Count} pickup(s) spawned");
                 }
+
+                // Reconfigurar biomas e inimigos para a nova área
+                SetupBiomesAndEnemies();
             }
             
             Console.WriteLine($"[Game1] Now in area: {newAreaId}");
+        }
+
+        private void SetupBiomesAndEnemies()
+        {
+            if (_levelDefinition == null) return;
+
+            // 1. Atualizar BiomeSystem
+            _biomeSystem.Clear();
+            
+            foreach (var bdef in _levelDefinition.Biomes)
+            {
+                Microsoft.Xna.Framework.Graphics.Texture2D tex = null;
+                if (!string.IsNullOrWhiteSpace(bdef.TextureKey))
+                {
+                    tex = _textureManager.GetTexture(bdef.TextureKey) ?? _textureManager.LoadTexture(bdef.TextureKey, bdef.TextureKey);
+                }
+                
+                // Se ainda null, fallback
+                if (tex == null)
+                {
+                     tex = _textureManager.GetTexture("floor");
+                }
+
+                _biomeSystem.RegisterBiome(new CubeSurvivor.World.Biomes.Biome(
+                    bdef.Type,
+                    bdef.Area,
+                    tex,
+                    allowsEnemySpawns: bdef.AllowsEnemySpawns,
+                    treeDensity: bdef.TreeDensity
+                ));
+            }
+            Console.WriteLine($"[Game1] BiomeSystem updated with {_levelDefinition.Biomes.Count} biomes");
+
+            // 2. Configurar EnemySpawnSystem
+            // Remover sistema antigo se existir
+            if (_enemySpawnSystem != null)
+            {
+                _world.RemoveSystem(_enemySpawnSystem);
+            }
+
+            // Criar novo sistema
+            int mapWidth = _levelDefinition.MapWidth ?? GameConfig.MapWidth;
+            int mapHeight = _levelDefinition.MapHeight ?? GameConfig.MapHeight;
+            var spawnArea = new Rectangle(0, 0, mapWidth, mapHeight);
+            
+            _enemySpawnSystem = new EnemySpawnSystem(
+                spawnArea, 
+                _enemyFactory, 
+                spawnInterval: 2f, 
+                maxEnemies: 50, 
+                exclusionProvider: _safeZoneManager, 
+                biomeSystem: _biomeSystem
+            );
+            _world.AddSystem(_enemySpawnSystem);
+            Console.WriteLine("[Game1] EnemySpawnSystem configured and added");
         }
 
         protected override void Update(GameTime gameTime)

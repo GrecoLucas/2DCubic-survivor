@@ -56,11 +56,21 @@ namespace CubeSurvivor.Core
         }
 
         /// <summary>
+        /// Remove um sistema do mundo
+        /// </summary>
+        public void RemoveSystem(GameSystem system)
+        {
+            _systems.Remove(system);
+        }
+
+        /// <summary>
         /// Atualiza todos os sistemas
         /// </summary>
         public void Update(GameTime gameTime)
         {
-            foreach (var system in _systems)
+            // Iterate over a copy to allow systems to be added/removed during update
+            var systemsToUpdate = _systems.ToList();
+            foreach (var system in systemsToUpdate)
             {
                 system.Update(gameTime);
             }

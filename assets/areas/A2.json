@@ -39,22 +39,10 @@
         "x": 0,
         "y": 0,
         "width": 2000,
-        "height": 1000
-      },
-      "type": "Forest",
-      "allowsEnemySpawns": true,
-      "treeDensity": 2,
-      "textureKey": "grass"
-    },
-    {
-      "area": {
-        "x": 0,
-        "y": 1000,
-        "width": 2000,
-        "height": 1000
+        "height": 2000
       },
       "type": "Cave",
-      "allowsEnemySpawns": false,
+      "allowsEnemySpawns": true,
       "treeDensity": 0,
       "textureKey": "cave"
     }
