@@ -6,6 +6,33 @@ namespace CubeSurvivor
     /// <summary>
     /// Modelo JSON para definição de abertura (porta) em uma zona segura.
     /// </summary>
+    public sealed class JsonRectDefinition
+    {
+        [JsonPropertyName("x")]
+        public int X { get; set; }
+
+        [JsonPropertyName("y")]
+        public int Y { get; set; }
+
+        [JsonPropertyName("width")]
+        public int Width { get; set; }
+
+        [JsonPropertyName("height")]
+        public int Height { get; set; }
+    }
+
+    public sealed class JsonPositionDefinition
+    {
+        [JsonPropertyName("x")]
+        public int X { get; set; }
+
+        [JsonPropertyName("y")]
+        public int Y { get; set; }
+    }
+
+    /// <summary>
+    /// Modelo JSON para definição de abertura (porta) em uma zona segura.
+    /// </summary>
     public sealed class JsonOpeningDefinition
     {
         [JsonPropertyName("x")]
@@ -26,20 +53,11 @@ namespace CubeSurvivor
     /// </summary>
     public sealed class JsonSafeZoneDefinition
     {
-        [JsonPropertyName("x")]
-        public int X { get; set; }
+        [JsonPropertyName("area")]
+        public JsonRectDefinition Area { get; set; }
 
-        [JsonPropertyName("y")]
-        public int Y { get; set; }
-
-        [JsonPropertyName("width")]
-        public int Width { get; set; }
-
-        [JsonPropertyName("height")]
-        public int Height { get; set; }
-
-        [JsonPropertyName("opening")]
-        public JsonOpeningDefinition Opening { get; set; }
+        [JsonPropertyName("openingArea")]
+        public JsonRectDefinition OpeningArea { get; set; }
     }
 
     /// <summary>
@@ -47,11 +65,8 @@ namespace CubeSurvivor
     /// </summary>
     public sealed class JsonCrateDefinition
     {
-        [JsonPropertyName("x")]
-        public int X { get; set; }
-
-        [JsonPropertyName("y")]
-        public int Y { get; set; }
+        [JsonPropertyName("position")]
+        public JsonPositionDefinition Position { get; set; }
 
         [JsonPropertyName("isDestructible")]
         public bool IsDestructible { get; set; }
@@ -65,11 +80,8 @@ namespace CubeSurvivor
     /// </summary>
     public sealed class JsonPickupDefinition
     {
-        [JsonPropertyName("x")]
-        public int X { get; set; }
-
-        [JsonPropertyName("y")]
-        public int Y { get; set; }
+        [JsonPropertyName("position")]
+        public JsonPositionDefinition Position { get; set; }
 
         [JsonPropertyName("type")]
         public string Type { get; set; }
@@ -83,17 +95,8 @@ namespace CubeSurvivor
     /// </summary>
     public sealed class JsonWoodSpawnRegion
     {
-        [JsonPropertyName("x")]
-        public int X { get; set; }
-
-        [JsonPropertyName("y")]
-        public int Y { get; set; }
-
-        [JsonPropertyName("width")]
-        public int Width { get; set; }
-
-        [JsonPropertyName("height")]
-        public int Height { get; set; }
+        [JsonPropertyName("area")]
+        public JsonRectDefinition Area { get; set; }
 
         [JsonPropertyName("maxActiveWood")]
         public int MaxActiveWood { get; set; }
@@ -132,17 +135,8 @@ namespace CubeSurvivor
     /// </summary>
     public sealed class JsonBiomeDefinition
     {
-        [JsonPropertyName("x")]
-        public int X { get; set; }
-
-        [JsonPropertyName("y")]
-        public int Y { get; set; }
-
-        [JsonPropertyName("width")]
-        public int Width { get; set; }
-
-        [JsonPropertyName("height")]
-        public int Height { get; set; }
+        [JsonPropertyName("area")]
+        public JsonRectDefinition Area { get; set; }
 
         [JsonPropertyName("type")]
         public string Type { get; set; }
@@ -153,8 +147,8 @@ namespace CubeSurvivor
         [JsonPropertyName("treeDensity")]
         public int TreeDensity { get; set; } = 0;
 
-        [JsonPropertyName("texture")]
-        public string Texture { get; set; }
+        [JsonPropertyName("textureKey")]
+        public string TextureKey { get; set; }
     }
 
 }

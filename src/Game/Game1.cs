@@ -3,6 +3,7 @@ using CubeSurvivor.Core.Spatial;
 using CubeSurvivor.Entities;
 using CubeSurvivor.Systems;
 using CubeSurvivor.Inventory.Systems;
+using CubeSurvivor.Game.Map;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System.Linq;
@@ -11,7 +12,7 @@ using System.IO;
 
 namespace CubeSurvivor
 {
-    public class Game1 : Game
+    public class Game1 : Microsoft.Xna.Framework.Game
     {
         private readonly GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
@@ -44,6 +45,10 @@ namespace CubeSurvivor
         private ISpatialIndex _spatialIndex;
         private WorldBackgroundRenderer _backgroundRenderer;
         private BulletSystem _bulletSystem;
+        
+        // Sistema de áreas e portais
+        private WorldMapDefinition _worldMap;
+        private AreaManager _areaManager;
 
         public Game1()
         {
@@ -152,6 +157,7 @@ namespace CubeSurvivor
                     _textureManager.LoadTexture("gun", "gun.png");
                     _textureManager.LoadTexture("hammer", "hammer.png");
                     _textureManager.LoadTexture("wood", "wood.png");
+                    _textureManager.LoadTexture("floor", "floor.png");
                 }
                 catch (Exception ex)
                 {
@@ -188,6 +194,7 @@ namespace CubeSurvivor
                         if (!string.IsNullOrWhiteSpace(bdef.TextureKey))
                         {
                             tex = _textureManager.GetTexture(bdef.TextureKey) ?? _textureManager.LoadTexture(bdef.TextureKey, bdef.TextureKey);
+                            Console.WriteLine($"[Game1] Biome texture '{bdef.TextureKey}' loaded: {tex != null}");
                         }
 
                         // Se não houver textura, usar texturas padrão como fallback
@@ -205,6 +212,7 @@ namespace CubeSurvivor
                             allowsEnemySpawns: bdef.AllowsEnemySpawns,
                             treeDensity: bdef.TreeDensity
                         ));
+                        Console.WriteLine($"[Game1] Biome added: Type={bdef.Type}, Area={bdef.Area}, Texture={tex?.Name ?? "NULL"}");
                     }
                 }
                 // Sem fallback legado de metades; requer definição JSON para controle total.
@@ -290,6 +298,10 @@ namespace CubeSurvivor
                 
                 // Sistema de construção
                 _world.AddSystem(new ConstructionSystem(_worldObjectFactory));
+                
+                // Sistema de teleporte por portais
+                _world.AddSystem(new PortalTeleportSystem(OnAreaChange));
+                Console.WriteLine("[Game1] PortalTeleportSystem added");
 
                 Rectangle spawnArea = new Rectangle(0, 0, GameConfig.MapWidth, GameConfig.MapHeight);
                 _world.AddSystem(new EnemySpawnSystem(spawnArea, _enemyFactory, GameConfig.EnemySpawnInterval, GameConfig.MaxEnemies, _safeZoneManager, biomeSystem));
@@ -307,17 +319,31 @@ namespace CubeSurvivor
 
         private void CreateLevelDefinition()
         {
-            // Carregar mundo a partir de JSON (data-driven)
-            string worldPath = Path.Combine("assets", "world1.json");
-            _levelDefinition = WorldDefinitionLoader.LoadFromJson(worldPath);
-
-            if (_levelDefinition == null)
+            // Carregar world map definition (áreas conectadas por portais)
+            string worldMapPath = Path.Combine("assets", "maps.txt");
+            _worldMap = WorldMapLoader.Load(worldMapPath);
+            
+            Console.WriteLine($"[Game1] World map loaded with {_worldMap.Areas.Count} areas");
+            
+            // Criar area manager
+            _areaManager = new AreaManager(_worldMap, _world);
+            
+            // Carregar área inicial
+            var startAreaId = _worldMap.StartAreaId;
+            var mapDef = _areaManager.LoadArea(startAreaId);
+            
+            if (mapDef == null)
             {
-                Console.WriteLine("[Game1] ⚠ Falha ao carregar mundo, usando mapa vazio");
+                Console.WriteLine("[Game1] ⚠ Failed to load starting area, creating empty map");
                 _levelDefinition = new LevelDefinition();
             }
-
-            Console.WriteLine($"[Game1] Nível carregado: {_levelDefinition.SafeZones.Count} zona(s), {_levelDefinition.Crates.Count} caixa(s)");
+            else
+            {
+                // Converter MapDefinition para LevelDefinition
+                _levelDefinition = mapDef.ToLevelDefinition();
+                Console.WriteLine($"[Game1] Starting area {startAreaId} loaded: {_levelDefinition.SafeZones.Count} zone(s), {_levelDefinition.Crates.Count} crate(s)");
+                Console.WriteLine($"[Game1] Current Area: {startAreaId}");
+            }
         }
 
         private void InitializeGame()
@@ -400,6 +426,83 @@ namespace CubeSurvivor
             }
 
             InitializeGame();
+        }
+        
+        /// <summary>
+        /// Chamado quando o player entra em um portal para mudar de área
+        /// </summary>
+        private void OnAreaChange(string newAreaId, Vector2 relativeSpawnPosition)
+        {
+            Console.WriteLine($"[Game1] === Area Change: {_areaManager.CurrentAreaId} -> {newAreaId} ===");
+            
+            // Limpar área atual (mantém player)
+            _areaManager.ClearCurrentArea();
+            
+            // Carregar nova área
+            var mapDef = _areaManager.LoadArea(newAreaId);
+            if (mapDef == null)
+            {
+                Console.WriteLine($"[Game1] Failed to load area {newAreaId}!");
+                return;
+            }
+            
+            // Atualizar LevelDefinition
+            _levelDefinition = mapDef.ToLevelDefinition();
+            
+            // Calcular posição de spawn
+            Vector2 spawnPosition = _areaManager.CalculateSpawnPosition(relativeSpawnPosition);
+            
+            // Mover player para nova posição
+            var player = _world.GetEntitiesWithComponent<Components.PlayerInputComponent>().FirstOrDefault();
+            if (player != null)
+            {
+                var transform = player.GetComponent<Components.TransformComponent>();
+                if (transform != null)
+                {
+                    transform.Position = spawnPosition;
+                    Console.WriteLine($"[Game1] Player spawned at {spawnPosition} in area {newAreaId}");
+                }
+            }
+            
+            // Atualizar dimensões do mapa
+            int mapWidth = _levelDefinition?.MapWidth ?? GameConfig.MapWidth;
+            int mapHeight = _levelDefinition?.MapHeight ?? GameConfig.MapHeight;
+            
+            _cameraService.SetMapSize(mapWidth, mapHeight);
+            _backgroundRenderer?.SetMapSize(mapWidth, mapHeight);
+            _bulletSystem?.SetMapSize(mapWidth, mapHeight);
+            
+            Console.WriteLine($"[Game1] Map systems updated for {mapWidth}x{mapHeight}");
+            
+            // Reinicializar elementos da área
+            if (_levelDefinition != null)
+            {
+                // Criar safe zones
+                if (_levelDefinition.SafeZones.Count > 0)
+                {
+                    _safeZoneManager.InitializeZones(_world, _levelDefinition);
+                    Console.WriteLine($"[Game1] {_levelDefinition.SafeZones.Count} safe zone(s) initialized");
+                }
+                
+                // Criar crates
+                if (_levelDefinition.Crates.Count > 0)
+                {
+                    foreach (var crateDef in _levelDefinition.Crates)
+                    {
+                        _worldObjectFactory.CreateCrate(_world, crateDef.Position, crateDef.IsDestructible, crateDef.MaxHealth);
+                    }
+                    Console.WriteLine($"[Game1] {_levelDefinition.Crates.Count} crate(s) created");
+                }
+                
+                // Criar pickups
+                if (_levelDefinition.Pickups.Count > 0)
+                {
+                    SpawnPickups();
+                    Console.WriteLine($"[Game1] {_levelDefinition.Pickups.Count} pickup(s) spawned");
+                }
+            }
+            
+            Console.WriteLine($"[Game1] Now in area: {newAreaId}");
         }
 
         protected override void Update(GameTime gameTime)

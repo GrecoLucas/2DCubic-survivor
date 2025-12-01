@@ -1,0 +1,41 @@
+{
+  "mapWidth": 2000,
+  "mapHeight": 2000,
+  "crates": [],
+  "safeZones": [],
+  "pickups": [
+    {
+      "position": {
+        "x": 500,
+        "y": 500
+      },
+      "type": "wood",
+      "amount": 10
+    }
+  ],
+  "woodSpawnRegions": [
+    {
+      "area": {
+        "x": 200,
+        "y": 200,
+        "width": 800,
+        "height": 800
+      },
+      "maxActiveWood": 20
+    }
+  ],
+  "biomes": [
+    {
+      "area": {
+        "x": 0,
+        "y": 0,
+        "width": 2000,
+        "height": 2000
+      },
+      "type": "Cave",
+      "allowsEnemySpawns": true,
+      "treeDensity": 0,
+      "textureKey": "cave"
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "mapWidth": 2000,
+  "mapHeight": 2000,
+  "crates": [
+    {
+      "position": {
+        "x": 500,
+        "y": 500
+      },
+      "isDestructible": true,
+      "maxHealth": 50
+    }
+  ],
+  "safeZones": [
+    {
+      "area": {
+        "x": 100,
+        "y": 100,
+        "width": 400,
+        "height": 300
+      },
+      "openingArea": {
+        "x": 300,
+        "y": 100,
+        "width": 100,
+        "height": 50
+      }
+    }
+  ],
+  "pickups": [
+    {
+      "position": {
+        "x": 300,
+        "y": 300
+      },
+      "type": "wood",
+      "amount": 5
+    },
+    {
+      "position": {
+        "x": 350,
+        "y": 300
+      },
+      "type": "hammer",
+      "amount": 1
+    }
+  ],
+  "woodSpawnRegions": [
+    {
+      "area": {
+        "x": 600,
+        "y": 600,
+        "width": 400,
+        "height": 400
+      },
+      "maxActiveWood": 10
+    }
+  ],
+  "biomes": [
+    {
+      "area": {
+        "x": 0,
+        "y": 0,
+        "width": 2000,
+        "height": 2000
+      },
+      "type": "Forest",
+      "allowsEnemySpawns": true,
+      "treeDensity": 3,
+      "textureKey": "grass"
+    }
+  ]
+}

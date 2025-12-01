@@ -96,7 +96,21 @@ namespace CubeSurvivor
                     var tileCenter = new Microsoft.Xna.Framework.Vector2(worldX + _tileSize / 2, worldY + _tileSize / 2);
                     var tex = _biomeTextureProvider(tileCenter);
                     if (tex == null)
+                    {
+                        // Log only once per second or for specific tiles to avoid spam
+                        if (x == minTileX && y == minTileY && System.DateTime.Now.Millisecond < 20)
+                        {
+                            System.Console.WriteLine($"[BackgroundRenderer] No biome texture at {tileCenter}");
+                        }
                         continue; // nenhum bioma cobre este tile -> não desenha
+                    }
+                    else
+                    {
+                         if (x == minTileX && y == minTileY && System.DateTime.Now.Millisecond < 20)
+                        {
+                            System.Console.WriteLine($"[BackgroundRenderer] Drawing texture {tex.Name} at {tileCenter}");
+                        }
+                    }
                     var dest = new Rectangle(worldX, worldY, _tileSize, _tileSize);
                     spriteBatch.Draw(tex, dest, Color.White);
                 }

@@ -29,7 +29,9 @@ namespace CubeSurvivor.Systems.World
 
         public Biome GetBiomeAt(Vector2 pos)
         {
-            return _biomes.FirstOrDefault(b => b.Contains(pos));
+            var biome = _biomes.FirstOrDefault(b => b.Contains(pos));
+            // if (biome == null && System.DateTime.Now.Millisecond < 5) Console.WriteLine($"[BiomeSystem] No biome found at {pos}");
+            return biome;
         }
 
         public Texture2D GetTextureForPosition(Vector2 pos)

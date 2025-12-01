@@ -51,7 +51,7 @@ namespace CubeSurvivor
                 {
                     level.Crates.Add(new CrateDefinition
                     {
-                        Position = new Vector2(crate.X, crate.Y),
+                        Position = new Vector2(crate.Position?.X ?? 0, crate.Position?.Y ?? 0),
                         IsDestructible = crate.IsDestructible,
                         MaxHealth = crate.MaxHealth
                     });
@@ -62,10 +62,12 @@ namespace CubeSurvivor
                 // Converter zonas seguras
                 foreach (var zone in jsonWorld.SafeZones)
                 {
-                    var area = new Rectangle(zone.X, zone.Y, zone.Width, zone.Height);
+                    var area = zone.Area != null 
+                        ? new Rectangle(zone.Area.X, zone.Area.Y, zone.Area.Width, zone.Area.Height)
+                        : Rectangle.Empty;
 
-                    var openingRect = zone.Opening != null
-                        ? new Rectangle(zone.Opening.X, zone.Opening.Y, zone.Opening.Width, zone.Opening.Height)
+                    var openingRect = zone.OpeningArea != null
+                        ? new Rectangle(zone.OpeningArea.X, zone.OpeningArea.Y, zone.OpeningArea.Width, zone.OpeningArea.Height)
                         : Rectangle.Empty;
 
                     level.SafeZones.Add(new SafeZoneDefinition
@@ -82,7 +84,7 @@ namespace CubeSurvivor
                 {
                     level.Pickups.Add(new PickupDefinition
                     {
-                        Position = new Vector2(pickup.X, pickup.Y),
+                        Position = new Vector2(pickup.Position?.X ?? 0, pickup.Position?.Y ?? 0),
                         Type = pickup.Type,
                         Amount = pickup.Amount
                     });
@@ -93,9 +95,13 @@ namespace CubeSurvivor
                 // Converter regiões de spawn de madeira
                 foreach (var region in jsonWorld.WoodSpawnRegions)
                 {
+                    var area = region.Area != null
+                        ? new Rectangle(region.Area.X, region.Area.Y, region.Area.Width, region.Area.Height)
+                        : Rectangle.Empty;
+
                     level.WoodSpawnRegions.Add(new WoodSpawnRegionDefinition
                     {
-                        Area = new Rectangle(region.X, region.Y, region.Width, region.Height),
+                        Area = area,
                         MaxActiveWood = region.MaxActiveWood
                     });
                 }
@@ -112,7 +118,9 @@ namespace CubeSurvivor
                 {
                     foreach (var jb in jsonWorld.Biomes)
                     {
-                        var rect = new Rectangle(jb.X, jb.Y, jb.Width, jb.Height);
+                        var rect = jb.Area != null
+                            ? new Rectangle(jb.Area.X, jb.Area.Y, jb.Area.Width, jb.Area.Height)
+                            : Rectangle.Empty;
                         CubeSurvivor.World.Biomes.BiomeType type = CubeSurvivor.World.Biomes.BiomeType.Unknown;
                         if (!string.IsNullOrWhiteSpace(jb.Type))
                         {
@@ -122,7 +130,7 @@ namespace CubeSurvivor
                             }
                         }
 
-                        var textureKey = jb.Texture;
+                        var textureKey = jb.TextureKey;
                         if (string.IsNullOrWhiteSpace(textureKey) && !string.IsNullOrWhiteSpace(jb.Type))
                         {
                             textureKey = jb.Type.ToLower() + ".png";
