@@ -8,7 +8,7 @@ namespace CubeSurvivor.Entities
     /// </summary>
     public interface IEnemyFactory
     {
-        Entity CreateEnemy(IGameWorld world, Vector2 position);
+        Entity CreateEnemy(IGameWorld world, Vector2 position, string enemyId = "basic");
     }
 }
 

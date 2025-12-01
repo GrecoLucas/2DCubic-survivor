@@ -149,6 +149,9 @@ namespace CubeSurvivor
 
         [JsonPropertyName("textureKey")]
         public string TextureKey { get; set; }
+
+        [JsonPropertyName("allowedEnemies")]
+        public List<string> AllowedEnemies { get; set; } = new();
     }
 
 }

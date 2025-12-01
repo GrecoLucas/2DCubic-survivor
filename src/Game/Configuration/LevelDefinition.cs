@@ -104,5 +104,6 @@ namespace CubeSurvivor
         public bool AllowsEnemySpawns { get; set; } = true;
         public int TreeDensity { get; set; } = 0;
         public string TextureKey { get; set; }
+        public List<string> AllowedEnemies { get; set; } = new();
     }
 

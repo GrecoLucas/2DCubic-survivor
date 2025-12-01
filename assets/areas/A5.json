@@ -17,7 +17,10 @@
             "type": "Lake",
             "allowsEnemySpawns": true,
             "treeDensity": 0,
-            "textureKey": "water"
+            "textureKey": "water",
+            "allowedEnemies": [
+                "water_elemental"
+            ]
         }
     ]
 }

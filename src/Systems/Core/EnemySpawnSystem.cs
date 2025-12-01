@@ -74,8 +74,21 @@ namespace CubeSurvivor.Systems
                 return;
             }
 
+            // Determine enemy type based on biome allowed list
+            string enemyId = "basic";
+            if (_biomeSystem != null)
+            {
+                var biome = _biomeSystem.GetBiomeAt(position);
+                if (biome != null && biome.AllowedEnemies != null && biome.AllowedEnemies.Count > 0)
+                {
+                    // Pick a random enemy from the allowed list
+                    int index = _random.Next(biome.AllowedEnemies.Count);
+                    enemyId = biome.AllowedEnemies[index];
+                }
+            }
+
             // Criar inimigo via factory (retorna a entidade criada)
-            var enemy = _enemyFactory.CreateEnemy(World, position);
+            var enemy = _enemyFactory.CreateEnemy(World, position, enemyId);
 
             // Aplicar escala de dificuldade à vida/dano do inimigo baseado no tempo decorrido
             float multiplier = GameConfig.GetEnemyDifficultyMultiplier(_elapsedTime);

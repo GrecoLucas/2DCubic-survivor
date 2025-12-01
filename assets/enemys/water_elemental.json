@@ -1,0 +1,15 @@
+{
+    "id": "water_elemental",
+    "width": 40,
+    "height": 40,
+    "color": "Blue",
+    "speed": 130,
+    "health": 70,
+    "damage": 12,
+    "lootTable": [
+        {
+            "item": "water_essence",
+            "chance": 1
+        }
+    ]
+}

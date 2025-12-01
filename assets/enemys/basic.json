@@ -1,0 +1,15 @@
+{
+    "id": "basic",
+    "width": 40,
+    "height": 40,
+    "color": "Red",
+    "speed": 150,
+    "health": 50,
+    "damage": 10,
+    "lootTable": [
+        {
+            "item": "brain",
+            "chance": 0.1
+        }
+    ]
+}

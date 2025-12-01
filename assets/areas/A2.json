@@ -45,7 +45,10 @@
       "type": "Cave",
       "allowsEnemySpawns": true,
       "treeDensity": 0,
-      "textureKey": "cave"
+      "textureKey": "cave",
+      "allowedEnemies": [
+        "bat"
+      ]
     }
   ]
 }

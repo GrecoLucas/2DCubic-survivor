@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using Microsoft.Xna.Framework;
@@ -142,7 +143,8 @@ namespace CubeSurvivor
                             Type = type,
                             AllowsEnemySpawns = jb.AllowsEnemySpawns,
                             TreeDensity = jb.TreeDensity,
-                            TextureKey = textureKey
+                            TextureKey = textureKey,
+                            AllowedEnemies = jb.AllowedEnemies ?? new List<string>()
                         });
                     }
 

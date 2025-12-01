@@ -10,14 +10,16 @@ namespace CubeSurvivor.World.Biomes
         public Texture2D Texture { get; }
         public bool AllowsEnemySpawns { get; }
         public int TreeDensity { get; }
+        public System.Collections.Generic.List<string> AllowedEnemies { get; }
 
-        public Biome(BiomeType type, Rectangle area, Texture2D texture, bool allowsEnemySpawns, int treeDensity)
+        public Biome(BiomeType type, Rectangle area, Texture2D texture, bool allowsEnemySpawns, int treeDensity, System.Collections.Generic.List<string> allowedEnemies = null)
         {
             Type = type;
             Area = area;
             Texture = texture;
             AllowsEnemySpawns = allowsEnemySpawns;
             TreeDensity = treeDensity;
+            AllowedEnemies = allowedEnemies ?? new System.Collections.Generic.List<string>();
         }
 
         public bool Contains(Vector2 position)

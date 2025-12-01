@@ -1,0 +1,15 @@
+{
+    "id": "boss",
+    "width": 100,
+    "height": 100,
+    "color": "Purple",
+    "speed": 110,
+    "health": 1000,
+    "damage": 30,
+    "lootTable": [
+        {
+            "item": "boss_relic",
+            "chance": 1.0
+        }
+    ]
+}

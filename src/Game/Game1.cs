@@ -4,6 +4,7 @@ using CubeSurvivor.Entities;
 using CubeSurvivor.Systems;
 using CubeSurvivor.Inventory.Systems;
 using CubeSurvivor.Game.Map;
+using CubeSurvivor.Entities.Factories;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System.Linq;
@@ -502,7 +503,8 @@ namespace CubeSurvivor
                     bdef.Area,
                     tex,
                     allowsEnemySpawns: bdef.AllowsEnemySpawns,
-                    treeDensity: bdef.TreeDensity
+                    treeDensity: bdef.TreeDensity,
+                    allowedEnemies: bdef.AllowedEnemies
                 ));
             }
             Console.WriteLine($"[Game1] BiomeSystem updated with {_levelDefinition.Biomes.Count} biomes");

@@ -1,0 +1,15 @@
+{
+    "id": "golem",
+    "width": 60,
+    "height": 60,
+    "color": "Gray",
+    "speed": 80,
+    "health": 150,
+    "damage": 25,
+    "lootTable": [
+        {
+            "item": "stone",
+            "chance": 0.1
+        }
+    ]
+}

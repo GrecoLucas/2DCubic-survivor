@@ -68,7 +68,10 @@
       "type": "Forest",
       "allowsEnemySpawns": false,
       "treeDensity": 10,
-      "textureKey": "grass"
+      "textureKey": "grass",
+      "allowedEnemies": [
+        "basic"
+      ]
     }
   ]
 }
