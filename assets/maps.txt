@@ -1,7 +1,8 @@
 # World Map Definition
 # Format: AreaID connections (right=R, left=L, up=U, down=D)
-# Example: A1 R:A2 means A1 has a portal on the right leading to A2
 
-A1 U:A2
-A2 D:A1 R:A3
-A3 L:A2
+A1 U:A5 R:A3
+A2 D:A3 L:A5
+A3 L:A1 D:A4 U:A2
+A4 U:A3
+A5 D:A1 R:A2
