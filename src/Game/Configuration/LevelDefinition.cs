@@ -58,6 +58,11 @@ namespace CubeSurvivor
     public sealed class LevelDefinition
     {
         /// <summary>
+        /// Nome de exibição da área (ex: "Forest")
+        /// </summary>
+        public string Name { get; set; }
+
+        /// <summary>
         /// Largura do mapa em pixels. Pode sobrescrever GameConfig.MapWidth se definida.
         /// </summary>
         public int? MapWidth { get; set; }

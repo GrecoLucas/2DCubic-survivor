@@ -108,6 +108,9 @@ namespace CubeSurvivor
     /// </summary>
     public sealed class JsonWorldDefinition
     {
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+
         [JsonPropertyName("mapWidth")]
         public int MapWidth { get; set; }
 

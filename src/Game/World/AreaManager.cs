@@ -73,6 +73,13 @@ namespace CubeSurvivor.Game.Map
             
             _currentMapDefinition = mapDef;
             
+            // Update AreaDefinition name if available in map definition
+            if (!string.IsNullOrEmpty(mapDef.Name))
+            {
+                _currentArea.Name = mapDef.Name;
+                Console.WriteLine($"[AreaManager] Updated area name to: {mapDef.Name}");
+            }
+            
             // Create portals for connections
             CreatePortals();
             

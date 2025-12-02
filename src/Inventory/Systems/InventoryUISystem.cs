@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Linq;
+using CubeSurvivor.Game.Map;
 
 namespace CubeSurvivor.Inventory.Systems
 {
@@ -40,11 +41,14 @@ namespace CubeSurvivor.Inventory.Systems
         private int _screenWidth;
         private int _screenHeight;
         
-        public InventoryUISystem(SpriteBatch spriteBatch, SpriteFont font, Texture2D pixelTexture)
+        private readonly AreaManager _areaManager;
+        
+        public InventoryUISystem(SpriteBatch spriteBatch, SpriteFont font, Texture2D pixelTexture, AreaManager areaManager)
         {
             _spriteBatch = spriteBatch ?? throw new ArgumentNullException(nameof(spriteBatch));
             _font = font;
             _pixelTexture = pixelTexture ?? throw new ArgumentNullException(nameof(pixelTexture));
+            _areaManager = areaManager;
         }
         
         public void SetScreenSize(int width, int height)
@@ -93,6 +97,22 @@ namespace CubeSurvivor.Inventory.Systems
             int totalWidth = (HotbarSlotSize * inventory.HotbarSize) + (HotbarSlotSpacing * (inventory.HotbarSize - 1));
             int startX = (_screenWidth - totalWidth) / 2;
             int startY = _screenHeight - HotbarSlotSize - HotbarPadding;
+            
+            // Draw Area Name above hotbar
+            if (_font != null && _areaManager?.CurrentArea != null)
+            {
+                string areaName = _areaManager.CurrentArea.Name ?? _areaManager.CurrentArea.Id;
+                Vector2 textSize = _font.MeasureString(areaName);
+                Vector2 textPos = new Vector2(
+                    startX + (totalWidth - textSize.X) / 2,
+                    startY - textSize.Y - 5
+                );
+                
+                // Text Shadow
+                _spriteBatch.DrawString(_font, areaName, textPos + Vector2.One, Color.Black);
+                // Main Text
+                _spriteBatch.DrawString(_font, areaName, textPos, Color.White);
+            }
             
             for (int i = 0; i < inventory.HotbarSize; i++)
             {

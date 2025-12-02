@@ -229,7 +229,7 @@ namespace CubeSurvivor
                 _inventoryInputSystem = new InventoryInputSystem();
                 _inventoryInputSystem.Initialize(_world);
                 
-                _inventoryUISystem = new InventoryUISystem(_spriteBatch, _font, _pixelTexture);
+                _inventoryUISystem = new InventoryUISystem(_spriteBatch, _font, _pixelTexture, _areaManager);
                 _inventoryUISystem.Initialize(_world);
                 _inventoryUISystem.SetScreenSize(GameConfig.ScreenWidth, GameConfig.ScreenHeight);
                 

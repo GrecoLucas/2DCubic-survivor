@@ -12,7 +12,15 @@ namespace CubeSurvivor.Game.Map
         /// <summary>
         /// ID único da área (ex: "A1", "A2")
         /// </summary>
+        /// <summary>
+        /// ID único da área (ex: "A1", "A2")
+        /// </summary>
         public string Id { get; set; }
+
+        /// <summary>
+        /// Nome de exibição da área (ex: "Floresta Inicial")
+        /// </summary>
+        public string Name { get; set; }
         
         /// <summary>
         /// Largura da área em pixels

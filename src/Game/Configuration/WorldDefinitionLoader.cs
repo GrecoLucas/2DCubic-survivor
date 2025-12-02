@@ -113,6 +113,7 @@ namespace CubeSurvivor
                 // Armazenar dimensões do mapa (pode ser usado para atualizar GameConfig em runtime)
                 level.MapWidth = jsonWorld.MapWidth;
                 level.MapHeight = jsonWorld.MapHeight;
+                level.Name = jsonWorld.Name;
 
                 // Converter biomas (se houver)
                 if (jsonWorld.Biomes != null && jsonWorld.Biomes.Count > 0)

@@ -37,14 +37,17 @@ namespace CubeSurvivor.Game.Map
                     if (string.IsNullOrWhiteSpace(trimmed) || trimmed.StartsWith("#"))
                         continue;
                     
+                    // Parse line manually
                     var parts = trimmed.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                     if (parts.Length < 1)
                         continue;
                     
                     var areaId = parts[0];
+                    
                     var area = new AreaDefinition
                     {
                         Id = areaId,
+                        Name = areaId, // Default to ID until JSON is loaded
                         WidthTiles = worldMap.DefaultAreaWidthTiles,
                         HeightTiles = worldMap.DefaultAreaHeightTiles,
                         ConfigPath = $"assets/areas/{areaId}.json"

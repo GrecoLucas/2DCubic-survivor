@@ -9,6 +9,7 @@ namespace CubeSurvivor.Game.Map
     /// </summary>
     public sealed class MapDefinition
     {
+        public string Name { get; set; }
         public int MapWidth { get; set; }
         public int MapHeight { get; set; }
         public int TileSize { get; set; } = 32;
@@ -26,6 +27,7 @@ namespace CubeSurvivor.Game.Map
         {
             return new MapDefinition
             {
+                Name = levelDef.Name,
                 MapWidth = levelDef.MapWidth ?? GameConfig.MapWidth,
                 MapHeight = levelDef.MapHeight ?? GameConfig.MapHeight,
                 TileSize = 32,
