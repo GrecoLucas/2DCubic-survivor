@@ -53,6 +53,15 @@ namespace CubeSurvivor
     }
 
     /// <summary>
+    /// Define uma região onde maçãs podem spawnar periodicamente.
+    /// </summary>
+    public sealed class AppleSpawnRegionDefinition
+    {
+        public Rectangle Area { get; set; }
+        public int MaxActiveApples { get; set; }
+    }
+
+    /// <summary>
     /// Define um nível/mapa completo com todos os seus elementos.
     /// </summary>
     public sealed class LevelDefinition
@@ -91,6 +100,11 @@ namespace CubeSurvivor
         /// Lista de regiões onde recursos (madeira) podem spawnar periodicamente.
         /// </summary>
         public List<WoodSpawnRegionDefinition> WoodSpawnRegions { get; } = new();
+
+        /// <summary>
+        /// Lista de regiões onde maçãs podem spawnar periodicamente.
+        /// </summary>
+        public List<AppleSpawnRegionDefinition> AppleSpawnRegions { get; } = new();
 
         /// <summary>
         /// Lista de biomas definidos pelo nível.

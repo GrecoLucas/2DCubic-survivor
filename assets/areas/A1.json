@@ -54,7 +54,18 @@
         "width": 400,
         "height": 400
       },
-      "maxActiveWood": 10
+      "maxActiveWood": 80
+    }
+  ],
+  "appleSpawnRegions": [
+    {
+      "area": {
+        "x": 0,
+        "y": 0,
+        "width": 2000,
+        "height": 2000
+      },
+      "maxActiveApples": 20
     }
   ],
   "biomes": [

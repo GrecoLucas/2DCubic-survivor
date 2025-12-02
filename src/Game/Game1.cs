@@ -48,6 +48,7 @@ namespace CubeSurvivor
         private ISpatialIndex _spatialIndex;
         private WorldBackgroundRenderer _backgroundRenderer;
         private BulletSystem _bulletSystem;
+        private AppleSpawnSystem _appleSpawnSystem;
         
         // Sistema de áreas e portais
         private WorldMapDefinition _worldMap;
@@ -270,8 +271,8 @@ namespace CubeSurvivor
                 _world.AddSystem(new PortalTeleportSystem(OnAreaChange));
                 Console.WriteLine("[Game1] PortalTeleportSystem added");
 
-                Rectangle spawnArea = new Rectangle(0, 0, GameConfig.MapWidth, GameConfig.MapHeight);
-                _world.AddSystem(new AppleSpawnSystem(spawnArea, _textureManager));
+                _appleSpawnSystem = new AppleSpawnSystem(_textureManager);
+                _world.AddSystem(_appleSpawnSystem);
                 
                 Console.WriteLine("[Game1] LoadContent() concluído com sucesso!");
             }
@@ -355,6 +356,10 @@ namespace CubeSurvivor
 
                 // Configurar biomas e spawn de inimigos
                 SetupBiomesAndEnemies();
+                
+                // Configurar spawn de maçãs
+                _appleSpawnSystem.SetSpawnRegions(_levelDefinition.AppleSpawnRegions);
+                Console.WriteLine($"[Game1] AppleSpawnSystem configured with {_levelDefinition.AppleSpawnRegions.Count} regions");
             }
             
             // Criar jogador mais para cima/esquerda, próximo das safe zones
@@ -472,6 +477,10 @@ namespace CubeSurvivor
 
                 // Reconfigurar biomas e inimigos para a nova área
                 SetupBiomesAndEnemies();
+                
+                // Configurar spawn de maçãs
+                _appleSpawnSystem.SetSpawnRegions(_levelDefinition.AppleSpawnRegions);
+                Console.WriteLine($"[Game1] AppleSpawnSystem configured with {_levelDefinition.AppleSpawnRegions.Count} regions");
             }
             
             Console.WriteLine($"[Game1] Now in area: {newAreaId}");

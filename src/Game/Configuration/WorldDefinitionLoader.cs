@@ -108,6 +108,22 @@ namespace CubeSurvivor
                 }
 
                 Console.WriteLine($"[WorldLoader] - {jsonWorld.WoodSpawnRegions.Count} regiões de spawn de madeira carregadas");
+
+                // Converter regiões de spawn de maçãs
+                foreach (var region in jsonWorld.AppleSpawnRegions)
+                {
+                    var area = region.Area != null
+                        ? new Rectangle(region.Area.X, region.Area.Y, region.Area.Width, region.Area.Height)
+                        : Rectangle.Empty;
+
+                    level.AppleSpawnRegions.Add(new AppleSpawnRegionDefinition
+                    {
+                        Area = area,
+                        MaxActiveApples = region.MaxActiveApples
+                    });
+                }
+
+                Console.WriteLine($"[WorldLoader] - {jsonWorld.AppleSpawnRegions.Count} regiões de spawn de maçãs carregadas");
                 Console.WriteLine("[WorldLoader] ✓ Mundo carregado com sucesso!");
 
                 // Armazenar dimensões do mapa (pode ser usado para atualizar GameConfig em runtime)
