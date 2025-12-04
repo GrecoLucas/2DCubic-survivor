@@ -9,7 +9,9 @@ namespace CubeSurvivor.Components
         Player,
         Enemy,
         PlayerBullet,
-        EnemyBullet
+        EnemyBullet,
+        Pickup,
+        Tree
     }
 }
 

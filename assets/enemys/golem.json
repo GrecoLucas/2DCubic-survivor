@@ -9,7 +9,7 @@
     "lootTable": [
         {
             "item": "stone",
-            "chance": 0.1
+            "chance": 1
         }
     ]
 }

@@ -89,12 +89,12 @@ namespace CubeSurvivor.Systems
             }
 
             // 5. Remover projéteis marcados para remoção
+            // 5. Remover projéteis marcados para remoção
             foreach (var bullet in _bulletsToRemove)
             {
                 World.RemoveEntity(bullet);
             }
         }
-
         /// <summary>
         /// Verifica e trata uma possível colisão entre duas entidades (narrow-phase).
         /// </summary>

@@ -46,9 +46,6 @@ namespace CubeSurvivor.Entities
             }
             brain.AddComponent(new PickupComponent(brainItem, quantity: 1, pickupRadius: 50f));
             
-            // Collider para detecção
-            brain.AddComponent(new ColliderComponent(25f, 25f, ColliderTag.Default));
-            
             return brain;
         }
     }

@@ -16,14 +16,27 @@ namespace CubeSurvivor.Systems
     {
         private readonly Random _random;
         private readonly BrainEntityFactory _brainFactory;
+        private readonly WingEntityFactory _wingFactory;
+        private readonly BossRelicEntityFactory _bossRelicFactory;
+        private readonly StoneEntityFactory _stoneFactory;
+        private readonly WaterEssenceEntityFactory _waterEssenceFactory;
         
         public DeathSystem(TextureManager textureManager = null)
         {
             _random = new Random();
             _brainFactory = new BrainEntityFactory();
+            _wingFactory = new WingEntityFactory();
+            _bossRelicFactory = new BossRelicEntityFactory();
+            _stoneFactory = new StoneEntityFactory();
+            _waterEssenceFactory = new WaterEssenceEntityFactory();
+            
             if (textureManager != null)
             {
                 _brainFactory.SetTextureManager(textureManager);
+                _wingFactory.SetTextureManager(textureManager);
+                _bossRelicFactory.SetTextureManager(textureManager);
+                _stoneFactory.SetTextureManager(textureManager);
+                _waterEssenceFactory.SetTextureManager(textureManager);
             }
         }
         
@@ -112,6 +125,18 @@ namespace CubeSurvivor.Systems
             {
                 case "brain":
                     _brainFactory.CreateBrain(World, position);
+                    break;
+                case "wing":
+                    _wingFactory.CreateWing(World, position);
+                    break;
+                case "boss_relic":
+                    _bossRelicFactory.CreateBossRelic(World, position);
+                    break;
+                case "stone":
+                    _stoneFactory.CreateStone(World, position);
+                    break;
+                case "water_essence":
+                    _waterEssenceFactory.CreateWaterEssence(World, position);
                     break;
                 // Futuros items podem ser adicionados aqui
                 default:

@@ -155,6 +155,10 @@ namespace CubeSurvivor
                 {
                     _textureManager.LoadAllFromDirectory("textures");
                     
+                    // Carregar texturas de itens
+                    Console.WriteLine("[Game1] Carregando texturas de itens de assets/items...");
+                    _textureManager.LoadAllFromDirectory("items");
+                    
                     // Recuperar referências para campos específicos usados em fallbacks
                     _grassTexture = _textureManager.GetTexture("grass");
                     _caveTexture = _textureManager.GetTexture("cave");
